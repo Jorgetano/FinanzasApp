@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   counterButton: { backgroundColor: "#555", padding: 15, borderRadius: 10, marginHorizontal: 10 },
   counterText: { fontSize: 20, color: "#FFFFFF" },
   counterValue: { fontSize: 18, color: "#FFFFFF", marginHorizontal: 10 },
-  item: { backgroundColor: "#1E1E1E", padding: 15, borderRadius: 10, marginBottom: 10 },
+  item: { backgroundColor: "#003f5d", padding: 15, borderRadius: 10, marginBottom: 10 },
   itemText: { color: "#FFFFFF", fontSize: 16, marginBottom: 5 },
   deleteButton: { backgroundColor: "#D32F2F", padding: 10, borderRadius: 10, alignItems: "center", marginTop: 10 },
   deleteButtonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
