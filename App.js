@@ -32,9 +32,9 @@ export default function App() {
           tabBarStyle: { backgroundColor: "#1E1E1E" },
         })}
       >
-        <Tab.Screen name="Inicio" component={HomeScreen} />
+        {/* <Tab.Screen name="Inicio" component={HomeScreen} />
         <Tab.Screen name="Ingresos" component={IngresosScreen} />
-        <Tab.Screen name="Egresos" component={EgresosScreen} />
+        <Tab.Screen name="Egresos" component={EgresosScreen} /> */}
         <Tab.Screen name="Deudas" component={DeudasScreen} />
       </Tab.Navigator>
     </NavigationContainer>
