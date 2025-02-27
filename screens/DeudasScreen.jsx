@@ -274,54 +274,228 @@ export default function DeudasScreen() {
   );
 }
 
-// Estilos
 const styles = StyleSheet.create({
-  
-  container: { flex: 1, padding: 20, backgroundColor: "#00527c" },
+  container: {
+    flex: 1,
+    paddingTop:"25",
+    paddingLeft: "15",
+    paddingBottom: "2",
+    paddingRight: "15",
+    backgroundColor: "#F5F5F5", // Fondo claro
+    justifyContent: "flex-start"
+  },
 
-  //Deuda Registrada\\
-  title: { 
-    color: "#00000", 
-    fontSize: 30, 
-    fontWeight: "normal", 
-    marginBottom: 20, 
-    textAlign: "center", 
-    fontFamily: "Dancing Script, cursive", // Fuente cursiva
-    letterSpacing: 1, 
-    textShadow: "3px 3px 4px black" // Sombra suave
-  }
-  
-  ,
-  formContainer: { backgroundColor: "#0000", padding: 20, borderRadius: 15 },
-  label: { color: "#FFFFFF", marginBottom: 5, fontSize: 16 },
-  input: { backgroundColor: "#333", color: "#FFFFFF", padding: 15, borderRadius: 10, marginBottom: 15, fontSize: 16 },
-  toggleContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
-  toggleButton: { flex: 1, padding: 15, alignItems: "center", marginHorizontal: 5, borderRadius: 10 },
-  toggleText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
-  selectedYes: { backgroundColor: "#4CAF50" }, // Verde para "No"
-  selectedNo: { backgroundColor: "#D32F2F" }, // Rojo para "Sí"
-  unselected: { backgroundColor: "#444" }, // Gris para no seleccionado
-  counterContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 20 },
-  counterButton: { backgroundColor: "#555", padding: 15, borderRadius: 10, marginHorizontal: 10 },
-  counterText: { fontSize: 20, color: "#FFFFFF" },
-  counterValue: { fontSize: 18, color: "#FFFFFF", marginHorizontal: 10 },
-  item: { backgroundColor: "#003f5d", padding: 15, borderRadius: 10, marginBottom: 10 },
-  itemText: { color: "#FFFFFF", fontSize: 16, marginBottom: 5 },
-  deleteButton: { backgroundColor: "#D32F2F", padding: 10, borderRadius: 10, alignItems: "center", marginTop: 10 },
-  deleteButtonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
-  buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
-  cancelButton: { backgroundColor: "#D32F2F", padding: 15, borderRadius: 10, flex: 1, marginRight: 10, alignItems: "center" },
-  saveButton: { backgroundColor: "#4CAF50", padding: 15, borderRadius: 10, flex: 1, marginLeft: 10, alignItems: "center" },
-  buttonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  title: {
+    color: "#2C3E50", // Color oscuro
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+    fontFamily: "Roboto",
+  },
+
+  formContainer: {
+    backgroundColor: "#FFFFFF", // Fondo blanco para el formulario
+    padding: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: "10",
+    marginTop: "10"
+  },
+  listContainer: {
+    flex: 1,
+    marginTop: -7, // Add space above the list container
+  },
+
+  label: {
+    color: "#34495E", // Color de texto más oscuro
+    marginBottom: 5,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+
+  input: {
+    backgroundColor: "#ECF0F1", // Fondo de entrada más claro
+    color: "#2C3E50",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#BDC3C7",
+  },
+
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+
+  toggleButton: {
+    flex: 1,
+    padding: 12,
+    alignItems: "center",
+    marginHorizontal: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#BDC3C7",
+    backgroundColor: "#FFFFFF", // Fondo blanco
+  },
+
+  toggleText: {
+    color: "#2C3E50",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  selectedYes: {
+    backgroundColor: "#2ECC71", // Verde para seleccionado
+    borderColor: "#27AE60",
+  },
+  selectedNo: {
+    backgroundColor: "#E74C3C", // Rojo para seleccionado
+    borderColor: "#C0392B",
+  },
+  unselected: {
+    backgroundColor: "#FFFFFF", // Fondo blanco para no seleccionado
+  },
+
+  counterContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+
+  counterButton: {
+    backgroundColor: "#3498DB", // Azul para los botones de contador
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+
+  counterText: {
+    fontSize: 20,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+
+  counterValue: {
+    fontSize: 18,
+    color: "#2C3E50",
+    marginHorizontal: 10,
+  },
+
+  item: {
+    backgroundColor: "#FFFFFF", // Fondo blanco para las deudas
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 15,
+    borderLeftWidth: 10,
+    borderLeftColor: "#3498DB", // Color azul para la barra lateral
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+
+  deleteButton: {
+    backgroundColor: "#E74C3C", // Rojo para eliminar
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+
+  deleteButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+
+  cancelButton: {
+    backgroundColor: "#E74C3C", // Rojo para cancelar
+    padding: 15,
+    borderRadius: 10,
+    flex: 1,
+    marginRight: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+
+  saveButton: {
+    backgroundColor: "#2ECC71", // Verde para guardar
+    padding: 15,
+    borderRadius: 10,
+    flex: 1,
+    marginLeft: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
   floatingButton: {
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#3498DB", // Azul para el botón flotante
     padding: 15,
     borderRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
     elevation: 5,
-    
   },
-  floatingButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+
+  floatingButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  title: {
+    color: "#2C3E50", // Color oscuro
+    fontSize: 20, // Aumentar el tamaño de la fuente
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "left",
+    fontFamily: "Roboto",
+    textTransform: "uppercase", // Hacer el texto en mayúsculas
+    margin:"-10",
+  },
 });

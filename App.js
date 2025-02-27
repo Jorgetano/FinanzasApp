@@ -17,7 +17,7 @@ export default function App() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerTitle: "Estado Financiero", // 🔥 Título único para todas las pantallas
-          headerStyle: { backgroundColor: "#1E1E1E" }, // Color del encabezado
+          headerStyle: { backgroundColor: "#0039a2" }, // Color del encabezado
           headerTitleStyle: { color: "white", fontSize: 20, fontWeight: "bold" }, // Estilo del título
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
@@ -29,7 +29,7 @@ export default function App() {
           },
           tabBarActiveTintColor: "tomato",
           tabBarInactiveTintColor: "gray",
-          tabBarStyle: { backgroundColor: "#1E1E1E" },
+          tabBarStyle: { backgroundColor: "#0039a2" },
         })}
       >
         {/* <Tab.Screen name="Inicio" component={HomeScreen} />
