@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
+import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   addDeudaToFirestore,
   getDeudasFromFirestore,
@@ -22,6 +24,12 @@ const ATRASADO_OPCIONES = {
   SI: "Sí",
 };
 
+// Mapa de entidades a imágenes
+const entidadImagenes = {
+  "Bancolombia": require('../assets/Bancolombia.webp'), // Asegúrate de que la ruta sea correcta
+  // Agrega más entidades e imágenes según sea necesario
+};
+
 export default function DeudasScreen() {
   const [showForm, setShowForm] = useState(false);
   const [entidad, setEntidad] = useState("");
@@ -31,6 +39,7 @@ export default function DeudasScreen() {
   const [deudaPendiente, setDeudaPendiente] = useState("");
   const [deudas, setDeudas] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [imagenEntidad, setImagenEntidad] = useState(null); // Estado para la imagen de la entidad
 
   // Cargar deudas al montar el componente
   useEffect(() => {
@@ -83,6 +92,7 @@ export default function DeudasScreen() {
       cuotas,
       deudaPendiente: atrasado === ATRASADO_OPCIONES.SI ? parseFloat(deudaPendiente).toFixed(2) : null,
       fecha: new Date().toISOString(),
+      imagen: entidadImagenes[entidad] || null, // Agregar la imagen de la entidad
     };
 
     try {
@@ -126,161 +136,188 @@ export default function DeudasScreen() {
     setAtrasado(ATRASADO_OPCIONES.NO);
     setCuotas(1);
     setDeudaPendiente("");
+    setImagenEntidad(null); // Resetear la imagen al cerrar el formulario
+  };
+
+  // Manejar el cambio de entidad
+  const handleEntidadChange = (selectedEntidad) => {
+    setEntidad(selectedEntidad);
+    setImagenEntidad(entidadImagenes[selectedEntidad] || null); // Actualiza la imagen según la entidad seleccionada
   };
 
   // Renderizar cada elemento de la lista de deudas
-  const renderItem = useCallback(({ item }) => (
-    <View style={styles.item}>
-      <Text style={styles.itemText}>
-        {item.entidad}: ${parseFloat(item.monto).toLocaleString("es-ES", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </Text>
-      <Text style={styles.itemText}>Atrasado: {item.atrasado}</Text>
-      {item.atrasado === ATRASADO_OPCIONES.SI && (
-        <Text style={styles.itemText}>
-          Deuda Pendiente: ${parseFloat(item.deudaPendiente).toLocaleString("es-ES", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </Text>
-      )}
-      <Text style={styles.itemText}>Cuotas: {item.cuotas}</Text>
+  const renderItem = useCallback(({ item }) => {
+    const renderRightActions = () => (
       <TouchableOpacity
-        accessibilityLabel="Eliminar deuda"
-        accessibilityHint="Elimina la deuda seleccionada"
         style={styles.deleteButton}
         onPress={() => handleDeleteDeuda(item.id)}
       >
         <Text style={styles.deleteButtonText}>Eliminar</Text>
       </TouchableOpacity>
-    </View>
-  ), []);
+    );
 
-  return (
-    <View style={styles.container}>
-      {showForm ? (
-        <ScrollView contentContainerStyle={styles.formContainer}>
-          <Text style={styles.label}>Entidad Financiera</Text>
-          <TextInput
-            style={styles.input}
-            value={entidad}
-            onChangeText={setEntidad}
-            placeholder="Ej: Banco XYZ"
-            placeholderTextColor="#888"
-          />
-
-          <Text style={styles.label}>Monto mensual</Text>
-          <TextInput
-            style={styles.input}
-            value={monto}
-            onChangeText={setMonto}
-            keyboardType="numeric"
-            placeholder="Ej: 1500.00"
-            placeholderTextColor="#888"
-          />
-
-          <Text style={styles.label}>¿Estás atrasado en los pagos?</Text>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                setAtrasado(ATRASADO_OPCIONES.NO);
-                setDeudaPendiente("");
-              }}
-              style={[
-                styles.toggleButton,
-                atrasado === ATRASADO_OPCIONES.NO ? styles.selectedYes : styles.unselected,
-              ]}
-            >
-              <Text style={styles.toggleText}>No</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setAtrasado(ATRASADO_OPCIONES.SI)}
-              style={[
-                styles.toggleButton,
-                atrasado === ATRASADO_OPCIONES.SI ? styles.selectedNo : styles.unselected,
-              ]}
-            >
-              <Text style={styles.toggleText}>Sí</Text>
-            </TouchableOpacity>
-          </View>
-
-          {atrasado === ATRASADO_OPCIONES.SI && (
-            <>
-              <Text style={styles.label}>Valor de la deuda pendiente</Text>
-              <TextInput
-                style={styles.input}
-                value={deudaPendiente}
-                onChangeText={setDeudaPendiente}
-                keyboardType="numeric"
-                placeholder="Ej: 500.00"
-                placeholderTextColor="#888"
-              />
-            </>
-          )}
-
-          <Text style={styles.label}>Número de cuotas pendientes</Text>
-          <View style={styles.counterContainer}>
-            <TouchableOpacity
-              onPress={() => setCuotas(Math.max(1, cuotas - 1))}
-              style={styles.counterButton}
-            >
-              <Text style={styles.counterText}>-</Text>
-            </TouchableOpacity>
-            <Text style={styles.counterValue}>{cuotas}</Text>
-            <TouchableOpacity
-              onPress={() => setCuotas(cuotas + 1)}
-              style={styles.counterButton}
-            >
-              <Text style={styles.counterText}>+</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCloseForm}>
-              <Text style={styles.buttonText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
-              <Text style={styles.buttonText}>Guardar</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      ) : (
-        <View style={styles.listContainer}>
-          <Text style={styles.title}>Deudas Registradas</Text>
-          {loading ? (
-            <ActivityIndicator size="large" color="#4CAF50" />
-          ) : (
-            <FlatList
-              data={deudas}
-              keyExtractor={(item) => item.id}
-              renderItem={renderItem}
+    return (
+      <Swipeable renderRightActions={renderRightActions}>
+        <View style={[styles.item, { borderLeftColor: item.atrasado === ATRASADO_OPCIONES.SI ? "#E74C3C" : "#3498DB" }]}>
+          {item.imagen && ( // Renderiza la imagen de la entidad si existe
+            <Image
+              source={item.imagen}
+              style={{ width: 50, height: 50, marginBottom: 10 }} // Ajusta el tamaño según sea necesario
             />
           )}
+          <Text style={styles.itemText}>
+            {item.entidad}: ${parseFloat(item.monto).toLocaleString("es-ES", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </Text>
+          <Text style={styles.itemText}>Atrasado: {item.atrasado}</Text>
+          {item.atrasado === ATRASADO_OPCIONES.SI && (
+            <Text style={styles.itemText}>
+              Deuda Pendiente: ${parseFloat(item.deudaPendiente).toLocaleString("es-ES", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Text>
+          )}
+          <Text style={styles.itemText}>Cuotas: {item.cuotas}</Text>
         </View>
-      )}
+      </Swipeable>
+    );
+  }, []);
 
-      {/* Botón flotante para agregar deuda */}
-      {!showForm && (
-        <TouchableOpacity
-          style={styles.floatingButton}
-          onPress={() => setShowForm(true)}
-        >
-          <Text style={styles.floatingButtonText}>Agregar Deuda</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        {showForm ? (
+          <ScrollView contentContainerStyle={styles.formContainer}>
+            <Text style={styles.label}>Entidad Financiera</Text>
+            <TextInput
+              style={styles.input}
+              value={entidad}
+              onChangeText={handleEntidadChange} // Cambia aquí para usar la nueva función
+              placeholder="Ej: Banco XYZ"
+              placeholderTextColor="#888"
+            />
+
+            {imagenEntidad && (
+              <Image
+                source={imagenEntidad}
+                style={{ width: 100, height: 100, alignSelf: 'center', marginBottom: 20 }} // Ajusta el tamaño según sea necesario
+              />
+            )}
+
+            <Text style={styles.label}>Monto mensual</Text>
+            <TextInput
+              style={styles.input}
+              value={monto}
+              onChangeText={setMonto}
+              keyboardType="numeric"
+              placeholder="Ej: 1500.00"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.label}>¿Estás atrasado en los pagos?</Text>
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  setAtrasado(ATRASADO_OPCIONES.NO);
+                  setDeudaPendiente("");
+                }}
+                style={[
+                  styles.toggleButton,
+                  atrasado === ATRASADO_OPCIONES.NO ? styles.selectedYes : styles.unselected,
+                ]}
+              >
+                <Text style={styles.toggleText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setAtrasado(ATRASADO_OPCIONES.SI)}
+                style={[
+                  styles.toggleButton,
+                  atrasado === ATRASADO_OPCIONES.SI ? styles.selectedNo : styles.unselected,
+                ]}
+              >
+                <Text style={styles.toggleText}>Sí</Text>
+              </TouchableOpacity>
+            </View>
+
+            {atrasado === ATRASADO_OPCIONES.SI && (
+              <>
+                <Text style={styles.label}>Valor de la deuda pendiente</Text>
+                <TextInput
+                  style={styles.input}
+                  value={deudaPendiente}
+                  onChangeText={setDeudaPendiente}
+                  keyboardType="numeric"
+                  placeholder="Ej: 500.00"
+                  placeholderTextColor="#888"
+                />
+              </>
+            )}
+
+            <Text style={styles.label}>Número de cuotas pendientes</Text>
+            <View style={styles.counterContainer}>
+              <TouchableOpacity
+                onPress={() => setCuotas(Math.max(1, cuotas - 1))}
+                style={styles.counterButton}
+              >
+                <Text style={styles.counterText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.counterValue}>{cuotas}</Text>
+              <TouchableOpacity
+                onPress={() => setCuotas(cuotas + 1)}
+                style={styles.counterButton}
+              >
+                <Text style={styles.counterText}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCloseForm}>
+                <Text style={styles.buttonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
+                <Text style={styles.buttonText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        ) : (
+          <View style={styles.listContainer}>
+            <Text style={styles.title}>Deudas Registradas</Text>
+            {loading ? (
+              <ActivityIndicator size="large" color="#4CAF50" />
+            ) : (
+              <FlatList
+                data={deudas}
+                keyExtractor={(item) => item.id}
+                renderItem={renderItem}
+              />
+            )}
+          </View>
+        )}
+
+        {/* Botón flotante para agregar deuda */}
+        {!showForm && (
+          <TouchableOpacity
+            style={styles.floatingButton}
+            onPress={() => setShowForm(true)}
+          >
+            <Text style={styles.floatingButtonText}>Agregar Deuda</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop:"25",
-    paddingLeft: "15",
-    paddingBottom: "2",
-    paddingRight: "15",
+    paddingTop: 25,
+    paddingLeft: 15,
+    paddingBottom: 2,
+    paddingRight: 15,
     backgroundColor: "#F5F5F5", // Fondo claro
     justifyContent: "flex-start"
   },
@@ -303,8 +340,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
-    marginBottom: "10",
-    marginTop: "10"
+    marginBottom: 10,
+    marginTop: 10
   },
   listContainer: {
     flex: 1,
@@ -414,12 +451,9 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    justifyContent: "center",
+    width: 100, // Ancho del botón de eliminar
+    marginVertical: 10,
   },
 
   deleteButtonText: {
@@ -485,17 +519,6 @@ const styles = StyleSheet.create({
   floatingButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
-  },
-
-  title: {
-    color: "#2C3E50", // Color oscuro
-    fontSize: 20, // Aumentar el tamaño de la fuente
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "left",
-    fontFamily: "Roboto",
-    textTransform: "uppercase", // Hacer el texto en mayúsculas
-    margin:"-10",
-  },
+    fontWeight: "bold"
+  }
 });
