@@ -1,28 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Alert,
-  FlatList,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Image,
+  View, Text, StyleSheet, TextInput, Alert, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Image
 } from "react-native";
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
-import {
-  addDeudaToFirestore,
-  getDeudasFromFirestore,
-  deleteDeudaFromFirestore,
-} from "../credenciales";
+import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore } from "../credenciales";
 
 // Constantes para opciones
-const ATRASADO_OPCIONES = {
-  NO: "No",
-  SI: "Sí",
-};
+const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 
 // Mapa de entidades a imágenes
 const entidadImagenes = {
@@ -37,6 +21,7 @@ export default function DeudasScreen() {
   const [atrasado, setAtrasado] = useState(ATRASADO_OPCIONES.NO);
   const [cuotas, setCuotas] = useState(1);
   const [deudaPendiente, setDeudaPendiente] = useState("");
+  const [fechaInicio, setFechaInicio] = useState("");
   const [deudas, setDeudas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [imagenEntidad, setImagenEntidad] = useState(null); // Estado para la imagen de la entidad
@@ -61,14 +46,14 @@ export default function DeudasScreen() {
 
   // Validar y guardar una nueva deuda
   const handleSubmit = async () => {
-    if (!entidad.trim() || !monto.trim()) {
+    if (!entidad.trim() || !monto.trim() || !fechaInicio.trim()) {
       Alert.alert("Error", "Todos los campos son obligatorios.");
       return;
     }
 
-    const montoNum = parseFloat(monto);
+    const montoNum = Number(monto.replace(/,/g, '.'));
     if (isNaN(montoNum) || montoNum <= 0) {
-      Alert.alert("Error", "El monto debe ser un número válido mayor a 0.");
+      Alert.alert("Error", "El monto debe ser un número válido.");
       return;
     }
 
@@ -91,8 +76,8 @@ export default function DeudasScreen() {
       atrasado,
       cuotas,
       deudaPendiente: atrasado === ATRASADO_OPCIONES.SI ? parseFloat(deudaPendiente).toFixed(2) : null,
-      fecha: new Date().toISOString(),
-      imagen: entidadImagenes[entidad] || null, // Agregar la imagen de la entidad
+      fechaInicio,
+      imagen: entidadImagenes[entidad] || null,
     };
 
     try {
@@ -107,25 +92,13 @@ export default function DeudasScreen() {
 
   // Eliminar una deuda
   const handleDeleteDeuda = async (id) => {
-    Alert.alert(
-      "Eliminar Deuda",
-      "¿Estás seguro de que deseas eliminar esta deuda?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          onPress: async () => {
-            try {
-              await deleteDeudaFromFirestore(id);
-              fetchDeudas();
-              Alert.alert("Éxito", "La deuda se ha eliminado correctamente.");
-            } catch (error) {
-              Alert.alert("Error", "No se pudo eliminar la deuda.");
-            }
-          },
-        },
-      ]
-    );
+    try {
+      await deleteDeudaFromFirestore(id);
+      fetchDeudas();
+      Alert.alert("Éxito", "La deuda se ha eliminado correctamente.");
+    } catch (error) {
+      Alert.alert("Error", "No se pudo eliminar la deuda.");
+    }
   };
 
   // Cerrar el formulario y resetear los campos
@@ -136,6 +109,7 @@ export default function DeudasScreen() {
     setAtrasado(ATRASADO_OPCIONES.NO);
     setCuotas(1);
     setDeudaPendiente("");
+    setFechaInicio("");
     setImagenEntidad(null); // Resetear la imagen al cerrar el formulario
   };
 
@@ -158,29 +132,33 @@ export default function DeudasScreen() {
 
     return (
       <Swipeable renderRightActions={renderRightActions}>
+        <Text style={styles.itemText2}> {item.fechaInicio}</Text>
+
         <View style={[styles.item, { borderLeftColor: item.atrasado === ATRASADO_OPCIONES.SI ? "#E74C3C" : "#3498DB" }]}>
+
           {item.imagen && ( // Renderiza la imagen de la entidad si existe
             <Image
               source={item.imagen}
-              style={{ width: 50, height: 50, marginBottom: 10 }} // Ajusta el tamaño según sea necesario
+              style={{ width: 50, height: 50, marginBottom: 10, marginRight: "15" }} // Ajusta el tamaño según sea necesario
             />
           )}
           <Text style={styles.itemText}>
-            {item.entidad}: ${parseFloat(item.monto).toLocaleString("es-ES", {
+            ${parseFloat(item.monto).toLocaleString("es-ES", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
           </Text>
-          <Text style={styles.itemText}>Atrasado: {item.atrasado}</Text>
+
           {item.atrasado === ATRASADO_OPCIONES.SI && (
             <Text style={styles.itemText}>
-              Deuda Pendiente: ${parseFloat(item.deudaPendiente).toLocaleString("es-ES", {
+              Atrasada: ${parseFloat(item.deudaPendiente).toLocaleString("es-ES", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </Text>
           )}
           <Text style={styles.itemText}>Cuotas: {item.cuotas}</Text>
+
         </View>
       </Swipeable>
     );
@@ -191,6 +169,7 @@ export default function DeudasScreen() {
       <View style={styles.container}>
         {showForm ? (
           <ScrollView contentContainerStyle={styles.formContainer}>
+
             <Text style={styles.label}>Entidad Financiera</Text>
             <TextInput
               style={styles.input}
@@ -216,6 +195,9 @@ export default function DeudasScreen() {
               placeholder="Ej: 1500.00"
               placeholderTextColor="#888"
             />
+            <Text style={styles.label}>Fecha Deuda</Text>
+            <TextInput style={styles.input} value={fechaInicio} onChangeText={setFechaInicio} keyboardType="numeric"
+              placeholder="DD-MM-AAAA" placeholderTextColor="#888" />
 
             <Text style={styles.label}>¿Estás atrasado en los pagos?</Text>
             <View style={styles.toggleContainer}>
@@ -312,213 +294,42 @@ export default function DeudasScreen() {
 }
 
 const styles = StyleSheet.create({
+
   container: {
-    flex: 1,
-    paddingTop: 25,
-    paddingLeft: 15,
-    paddingBottom: 2,
-    paddingRight: 15,
-    backgroundColor: "#F5F5F5", // Fondo claro
-    justifyContent: "flex-start"
-  },
+    flex: 1, padding: "15", backgroundColor: "#F5F5F5",
+  },// Fondo claro
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 10, textAlign: "center", color: "#2C3E50" },
+  formContainer: { backgroundColor: "#FFFFFF", padding: 20, borderRadius: 15, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5, marginBottom: 10, marginTop: 10 },
+  listContainer: { flex: 1, marginTop: -7 },
+  label: { color: "#34495E", marginBottom: 5, fontSize: 16, fontWeight: "500" },
+  input: { backgroundColor: "#ECF0F1", color: "#2C3E50", padding: 15, borderRadius: 10, marginBottom: 15, fontSize: 16, borderWidth: 1, borderColor: "#BDC3C7" },
+  toggleContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
+  toggleButton: { flex: 1, padding: 12, alignItems: "center", marginHorizontal: 5, borderRadius: 8, borderWidth: 1, borderColor: "#BDC3C7", backgroundColor: "#FFFFFF" },
+  toggleText: { color: "#2C3E50", fontSize: 16, fontWeight: "600" },
+  selectedYes: { backgroundColor: "#2ECC71", borderColor: "#27AE60" },
+  selectedNo: { backgroundColor: "#E74C3C", borderColor: "#C0392B" },
+  unselected: { backgroundColor: "#FFFFFF" },
+  counterContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  counterButton: { backgroundColor: "#3498DB", padding: 12, borderRadius: 8, marginHorizontal: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 3 },
+  counterText: { fontSize: 20, color: "#FFFFFF", fontWeight: "600" },
+  counterValue: { fontSize: 18, color: "#2C3E50", marginHorizontal: 10 },
 
-  title: {
-    color: "#2C3E50", // Color oscuro
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-    fontFamily: "Roboto",
-  },
+  item: { backgroundColor: "#FFFFFF", padding: 12, borderRadius: 10, marginTop: "-9", flexDirection: "row", alignItems: "center", borderLeftWidth: 15, borderLeftColor: "#3498DB", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
+  entityImage: { width: 40, height: 40, padding: "5", borderRadius: 5 },
+  itemText: { fontSize: 14, color: "#2C3E50", flex: 1 }, //letras del contenedor
 
-  formContainer: {
-    backgroundColor: "#FFFFFF", // Fondo blanco para el formulario
-    padding: 20,
-    borderRadius: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
-    marginBottom: 10,
-    marginTop: 10
-  },
-  listContainer: {
-    flex: 1,
-    marginTop: -7, // Add space above the list container
-  },
+  itemText2: { position: "relative", fontSize: 18, color: "#2C3E50", flex: 1, left: "16", top: "9", transform: [{ translateY: -5 }], zIndex: 1 },
 
-  label: {
-    color: "#34495E", // Color de texto más oscuro
-    marginBottom: 5,
-    fontSize: 16,
-    fontWeight: "500",
-  },
+  deleteButton: { backgroundColor: "#E74C3C", borderRadius: 5,width:"180",height:"80",marginTop:"20", alignItems: "center", justifyContent: "center" },
+  deleteButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold",paddingEnd:"2" },
+  
+  floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
+  floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },
 
-  input: {
-    backgroundColor: "#ECF0F1", // Fondo de entrada más claro
-    color: "#2C3E50",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#BDC3C7",
-  },
-
-  toggleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 15,
-  },
-
-  toggleButton: {
-    flex: 1,
-    padding: 12,
-    alignItems: "center",
-    marginHorizontal: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#BDC3C7",
-    backgroundColor: "#FFFFFF", // Fondo blanco
-  },
-
-  toggleText: {
-    color: "#2C3E50",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  selectedYes: {
-    backgroundColor: "#2ECC71", // Verde para seleccionado
-    borderColor: "#27AE60",
-  },
-  selectedNo: {
-    backgroundColor: "#E74C3C", // Rojo para seleccionado
-    borderColor: "#C0392B",
-  },
-  unselected: {
-    backgroundColor: "#FFFFFF", // Fondo blanco para no seleccionado
-  },
-
-  counterContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-
-  counterButton: {
-    backgroundColor: "#3498DB", // Azul para los botones de contador
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-
-  counterText: {
-    fontSize: 20,
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-
-  counterValue: {
-    fontSize: 18,
-    color: "#2C3E50",
-    marginHorizontal: 10,
-  },
-
-  item: {
-    backgroundColor: "#FFFFFF", // Fondo blanco para las deudas
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 15,
-    borderLeftWidth: 10,
-    borderLeftColor: "#3498DB", // Color azul para la barra lateral
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-
-  deleteButton: {
-    backgroundColor: "#E74C3C", // Rojo para eliminar
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    width: 100, // Ancho del botón de eliminar
-    marginVertical: 10,
-  },
-
-  deleteButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-  },
-
-  cancelButton: {
-    backgroundColor: "#E74C3C", // Rojo para cancelar
-    padding: 15,
-    borderRadius: 10,
-    flex: 1,
-    marginRight: 10,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-
-  saveButton: {
-    backgroundColor: "#2ECC71", // Verde para guardar
-    padding: 15,
-    borderRadius: 10,
-    flex: 1,
-    marginLeft: 10,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-
-  floatingButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#3498DB", // Azul para el botón flotante
-    padding: 15,
-    borderRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-
-  floatingButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold"
-  }
+  buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
+  cancelButton: { backgroundColor: "#E74C3C", padding: 15, borderRadius: 10, flex: 1, marginRight: 10, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
+  saveButton: { backgroundColor: "#2ECC71", padding: 15, borderRadius: 10, flex: 1, marginLeft: 10, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
+  buttonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  floatingDateContainer: { position: "absolute", top: 20, left: "50%", transform: [{ translateX: -100 }], backgroundColor: "#2C3E50", paddingVertical: 8, paddingHorizontal: 15, borderRadius: 10, zIndex: 10 },
+  floatingDateText: { color: "#2C3E50", fontSize: 14, fontWeight: "bold" },
 });
