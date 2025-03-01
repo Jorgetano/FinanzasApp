@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, TextInput, Alert, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Image
+  View, Text, StyleSheet, TextInput, Alert, FlatList, TouchableOpacity, ActivityIndicator, Image
 } from "react-native";
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../credenciales";
@@ -13,29 +13,9 @@ const entidadImagenes = {
   "Bancolombia": require('../assets/Bancolombia-.png'),
   "Agaval": require('../assets/Agaval.webp'),
   "Banco De Bogota": require('../assets/Banco De Bogota.png'),
-
 };
 
-const entidadesFinancieras = [
-  "Bancolombia",
-  "Banco de Bogotá",
-  "Davivienda",
-  "Banco de Occidente",
-  "Banco Popular",
-  "Banco Agrario de Colombia",
-  "BBVA Colombia",
-  "Banco AV Villas",
-  "Banco Caja Social",
-  "Banco GNB Sudameris",
-  "Scotiabank Colpatria",
-  "Banco Pichincha",
-  "Bancoomeva",
-  "Banco W",
-  "Banco Finandina",
-  "Banco Falabella",
-  "Bancamía",
-  "Banco Credifinanciera",
-  "Banco Coopcentral",
+const entidadesFinancieras = ["Bancolombia", "Banco de Bogota", "Davivienda", "Banco de Occidente", "Banco Popular", "Banco Agrario de Colombia", "BBVA Colombia", "Banco AV Villas", "Banco Caja Social", "Banco GNB Sudameris", "Scotiabank Colpatria", "Banco Pichincha", "Bancoomeva", "Banco W", "Banco Finandina", "Banco Falabella", "Bancamía", "Banco Credifinanciera", "Banco Coopcentral",
 ];
 
 export default function DeudasScreen() {
@@ -49,15 +29,13 @@ export default function DeudasScreen() {
   const [deudas, setDeudas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [imagenEntidad, setImagenEntidad] = useState(null);
-  const [editingDeudaId, setEditingDeudaId] = useState(null); // Estado para almacenar el ID de la deuda en edición
+  const [editingDeudaId, setEditingDeudaId] = useState(null);
   const [sugerencias, setSugerencias] = useState([]);
 
-  // Cargar deudas al montar el componente
   useEffect(() => {
     fetchDeudas();
   }, []);
 
-  // Obtener deudas desde Firestore
   const fetchDeudas = async () => {
     setLoading(true);
     try {
@@ -70,7 +48,6 @@ export default function DeudasScreen() {
     }
   };
 
-  // Validar y guardar una nueva deuda o actualizar una existente
   const handleSubmit = async () => {
     if (!entidad.trim() || !monto.trim() || !fechaInicio.trim()) {
       Alert.alert("Error", "Todos los campos son obligatorios.");
@@ -108,11 +85,9 @@ export default function DeudasScreen() {
 
     try {
       if (editingDeudaId) {
-        // Si hay un ID de edición, actualiza la deuda
         await updateDeudaInFirestore(editingDeudaId, nuevaDeuda);
         Alert.alert("Éxito", "La deuda se ha actualizado correctamente.");
       } else {
-        // Si no hay ID de edición, crea una nueva deuda
         await addDeudaToFirestore(nuevaDeuda);
         Alert.alert("Éxito", "La deuda se ha guardado correctamente.");
       }
@@ -123,7 +98,6 @@ export default function DeudasScreen() {
     }
   };
 
-  // Eliminar una deuda
   const handleDeleteDeuda = async (id) => {
     try {
       await deleteDeudaFromFirestore(id);
@@ -134,9 +108,8 @@ export default function DeudasScreen() {
     }
   };
 
-  // Editar una deuda
   const handleEditDeuda = (deuda) => {
-    setEditingDeudaId(deuda.id); // Guarda el ID de la deuda en edición
+    setEditingDeudaId(deuda.id);
     setEntidad(deuda.entidad);
     setMonto(deuda.monto);
     setAtrasado(deuda.atrasado);
@@ -144,10 +117,9 @@ export default function DeudasScreen() {
     setDeudaPendiente(deuda.deudaPendiente || "");
     setFechaInicio(deuda.fechaInicio);
     setImagenEntidad(deuda.imagen || null);
-    setShowForm(true); // Muestra el formulario
+    setShowForm(true);
   };
 
-  // Cerrar el formulario y resetear los campos
   const handleCloseForm = () => {
     setShowForm(false);
     setEntidad("");
@@ -157,10 +129,9 @@ export default function DeudasScreen() {
     setDeudaPendiente("");
     setFechaInicio("");
     setImagenEntidad(null);
-    setEditingDeudaId(null); // Limpia el ID de edición
+    setEditingDeudaId(null);
   };
 
-  // Manejar el cambio de entidad
   const handleEntidadChange = (texto) => {
     setEntidad(texto);
     if (texto.length > 0) {
@@ -173,7 +144,6 @@ export default function DeudasScreen() {
     }
   };
 
-  // Renderizar cada elemento de la lista de deudas
   const renderItem = useCallback(({ item }) => {
     const renderRightActions = () => (
       <TouchableOpacity
@@ -205,7 +175,7 @@ export default function DeudasScreen() {
             <Image
               source={item.imagen}
               style={{ width: 50, height: 50, marginBottom: 10, marginRight: "15" }}
-              resizeMode="contain" // Ajusta la imagen sin cortarla
+              resizeMode="contain"
             />
           )}
           <Text style={styles.itemText}>
@@ -234,7 +204,7 @@ export default function DeudasScreen() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
         {showForm ? (
-          <ScrollView contentContainerStyle={styles.formContainer}>
+          <View style={styles.formContainer}>
             <Text style={styles.label}>Entidad Financiera</Text>
             <TextInput
               style={styles.input}
@@ -263,7 +233,7 @@ export default function DeudasScreen() {
               <Image
                 source={imagenEntidad}
                 style={{ width: 100, height: 100, alignSelf: 'center', marginBottom: 20 }}
-                resizeMode="contain" // Ajusta la imagen sin cortarla
+                resizeMode="contain"
               />
             )}
 
@@ -344,7 +314,7 @@ export default function DeudasScreen() {
                 <Text style={styles.buttonText}>{editingDeudaId ? "Actualizar" : "Guardar"}</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          </View>
         ) : (
           <View style={styles.listContainer}>
             <Text style={styles.title}>Deudas Registradas</Text>
@@ -355,12 +325,21 @@ export default function DeudasScreen() {
                 data={deudas}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
+                ListHeaderComponent={
+                  <View>
+                    {/* Add any header content here */}
+                  </View>
+                }
+                ListFooterComponent={
+                  <View>
+                    {/* Add any footer content here */}
+                  </View>
+                }
               />
             )}
           </View>
         )}
 
-        {/* Botón flotante para agregar deuda */}
         {!showForm && (
           <TouchableOpacity
             style={styles.floatingButton}
@@ -373,6 +352,7 @@ export default function DeudasScreen() {
     </GestureHandlerRootView>
   );
 }
+
 
 const styles = StyleSheet.create({
 
@@ -422,20 +402,20 @@ const styles = StyleSheet.create({
   },
 
   sugerenciasContainer: {
-  backgroundColor: "#fff",
-  borderRadius: 5,
-  elevation: 3,
-  marginTop: 5,
-  maxHeight: 150,
-  borderColor: "#ddd",
-  borderWidth: 1,
-},
-sugerenciaItem: {
-  padding: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: "#ddd",
-  color: "#333",
-},
+    backgroundColor: "#fff",
+    borderRadius: 5,
+    elevation: 3,
+    marginTop: 5,
+    maxHeight: 150,
+    borderColor: "#ddd",
+    borderWidth: 1,
+  },
+  sugerenciaItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    color: "#333",
+  },
 
   deleteButton: { backgroundColor: "#E74C3C", borderRadius: 5, width: "180", height: "80", marginTop: "20", alignItems: "center", justifyContent: "center" },
   deleteButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold", paddingEnd: "2" },
