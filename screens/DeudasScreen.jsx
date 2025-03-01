@@ -12,10 +12,10 @@ const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 const entidadImagenes = {
   "Bancolombia": require('../assets/Bancolombia-.png'),
   "Agaval": require('../assets/Agaval.webp'),
-  "Banco De Bogota": require('../assets/Banco De Bogota.png'),
+  "Banco de Bogota": require('../assets/Banco De Bogota.png'),
 };
 
-const entidadesFinancieras = ["Bancolombia", "Banco de Bogota", "Davivienda", "Banco de Occidente", "Banco Popular", "Banco Agrario de Colombia", "BBVA Colombia", "Banco AV Villas", "Banco Caja Social", "Banco GNB Sudameris", "Scotiabank Colpatria", "Banco Pichincha", "Bancoomeva", "Banco W", "Banco Finandina", "Banco Falabella", "Bancamía", "Banco Credifinanciera", "Banco Coopcentral",
+const entidadesFinancieras = ["Bancolombia", "Agaval", "Banco de Bogota", "Davivienda", "Banco de Occidente", "Banco Popular", "Banco Agrario de Colombia", "BBVA Colombia", "Banco AV Villas", "Banco Caja Social", "Banco GNB Sudameris", "Scotiabank Colpatria", "Banco Pichincha", "Bancoomeva", "Banco W", "Banco Finandina", "Banco Falabella", "Bancamía", "Banco Credifinanciera", "Banco Coopcentral",
 ];
 
 export default function DeudasScreen() {
