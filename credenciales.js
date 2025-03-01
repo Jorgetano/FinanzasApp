@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -43,6 +43,18 @@ export const deleteDeudaFromFirestore = async (id) => {
     console.log("Deuda eliminada correctamente");
   } catch (error) {
     console.error("Error eliminando deuda: ", error);
+    throw error;
+  }
+};
+
+// Actualizar una deuda por ID
+export const updateDeudaInFirestore = async (id, nuevaDeuda) => {
+  try {
+    const deudaRef = doc(db, "Deudas", id); // Crea una referencia al documento
+    await updateDoc(deudaRef, nuevaDeuda); // Actualiza el documento
+    console.log("Deuda actualizada correctamente");
+  } catch (error) {
+    console.error("Error al actualizar la deuda: ", error);
     throw error;
   }
 };

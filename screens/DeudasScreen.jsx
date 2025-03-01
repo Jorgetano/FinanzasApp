@@ -3,16 +3,40 @@ import {
   View, Text, StyleSheet, TextInput, Alert, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Image
 } from "react-native";
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
-import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore } from "../credenciales";
+import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../credenciales";
 
 // Constantes para opciones
 const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 
 // Mapa de entidades a imágenes
 const entidadImagenes = {
-  "Bancolombia": require('../assets/Bancolombia.webp'), // Asegúrate de que la ruta sea correcta
-  // Agrega más entidades e imágenes según sea necesario
+  "Bancolombia": require('../assets/Bancolombia-.png'),
+  "Agaval": require('../assets/Agaval.webp'),
+  "Banco De Bogota": require('../assets/Banco De Bogota.png'),
+
 };
+
+const entidadesFinancieras = [
+  "Bancolombia",
+  "Banco de Bogotá",
+  "Davivienda",
+  "Banco de Occidente",
+  "Banco Popular",
+  "Banco Agrario de Colombia",
+  "BBVA Colombia",
+  "Banco AV Villas",
+  "Banco Caja Social",
+  "Banco GNB Sudameris",
+  "Scotiabank Colpatria",
+  "Banco Pichincha",
+  "Bancoomeva",
+  "Banco W",
+  "Banco Finandina",
+  "Banco Falabella",
+  "Bancamía",
+  "Banco Credifinanciera",
+  "Banco Coopcentral",
+];
 
 export default function DeudasScreen() {
   const [showForm, setShowForm] = useState(false);
@@ -24,7 +48,9 @@ export default function DeudasScreen() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [deudas, setDeudas] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [imagenEntidad, setImagenEntidad] = useState(null); // Estado para la imagen de la entidad
+  const [imagenEntidad, setImagenEntidad] = useState(null);
+  const [editingDeudaId, setEditingDeudaId] = useState(null); // Estado para almacenar el ID de la deuda en edición
+  const [sugerencias, setSugerencias] = useState([]);
 
   // Cargar deudas al montar el componente
   useEffect(() => {
@@ -44,7 +70,7 @@ export default function DeudasScreen() {
     }
   };
 
-  // Validar y guardar una nueva deuda
+  // Validar y guardar una nueva deuda o actualizar una existente
   const handleSubmit = async () => {
     if (!entidad.trim() || !monto.trim() || !fechaInicio.trim()) {
       Alert.alert("Error", "Todos los campos son obligatorios.");
@@ -81,10 +107,17 @@ export default function DeudasScreen() {
     };
 
     try {
-      await addDeudaToFirestore(nuevaDeuda);
+      if (editingDeudaId) {
+        // Si hay un ID de edición, actualiza la deuda
+        await updateDeudaInFirestore(editingDeudaId, nuevaDeuda);
+        Alert.alert("Éxito", "La deuda se ha actualizado correctamente.");
+      } else {
+        // Si no hay ID de edición, crea una nueva deuda
+        await addDeudaToFirestore(nuevaDeuda);
+        Alert.alert("Éxito", "La deuda se ha guardado correctamente.");
+      }
       fetchDeudas();
       handleCloseForm();
-      Alert.alert("Éxito", "La deuda se ha guardado correctamente.");
     } catch (error) {
       Alert.alert("Error", "No se pudo guardar la deuda. Inténtelo de nuevo.");
     }
@@ -101,6 +134,19 @@ export default function DeudasScreen() {
     }
   };
 
+  // Editar una deuda
+  const handleEditDeuda = (deuda) => {
+    setEditingDeudaId(deuda.id); // Guarda el ID de la deuda en edición
+    setEntidad(deuda.entidad);
+    setMonto(deuda.monto);
+    setAtrasado(deuda.atrasado);
+    setCuotas(deuda.cuotas);
+    setDeudaPendiente(deuda.deudaPendiente || "");
+    setFechaInicio(deuda.fechaInicio);
+    setImagenEntidad(deuda.imagen || null);
+    setShowForm(true); // Muestra el formulario
+  };
+
   // Cerrar el formulario y resetear los campos
   const handleCloseForm = () => {
     setShowForm(false);
@@ -110,13 +156,21 @@ export default function DeudasScreen() {
     setCuotas(1);
     setDeudaPendiente("");
     setFechaInicio("");
-    setImagenEntidad(null); // Resetear la imagen al cerrar el formulario
+    setImagenEntidad(null);
+    setEditingDeudaId(null); // Limpia el ID de edición
   };
 
   // Manejar el cambio de entidad
-  const handleEntidadChange = (selectedEntidad) => {
-    setEntidad(selectedEntidad);
-    setImagenEntidad(entidadImagenes[selectedEntidad] || null); // Actualiza la imagen según la entidad seleccionada
+  const handleEntidadChange = (texto) => {
+    setEntidad(texto);
+    if (texto.length > 0) {
+      const sugerenciasFiltradas = entidadesFinancieras.filter((entidad) =>
+        entidad.toLowerCase().includes(texto.toLowerCase())
+      );
+      setSugerencias(sugerenciasFiltradas);
+    } else {
+      setSugerencias([]);
+    }
   };
 
   // Renderizar cada elemento de la lista de deudas
@@ -130,16 +184,28 @@ export default function DeudasScreen() {
       </TouchableOpacity>
     );
 
+    const renderLeftActions = () => (
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => handleEditDeuda(item)}
+      >
+        <Text style={styles.editButtonText}>Editar</Text>
+      </TouchableOpacity>
+    );
+
     return (
-      <Swipeable renderRightActions={renderRightActions}>
+      <Swipeable
+        renderRightActions={renderRightActions}
+        renderLeftActions={renderLeftActions}
+      >
         <Text style={styles.itemText2}> {item.fechaInicio}</Text>
 
         <View style={[styles.item, { borderLeftColor: item.atrasado === ATRASADO_OPCIONES.SI ? "#E74C3C" : "#3498DB" }]}>
-
-          {item.imagen && ( // Renderiza la imagen de la entidad si existe
+          {item.imagen && (
             <Image
               source={item.imagen}
-              style={{ width: 50, height: 50, marginBottom: 10, marginRight: "15" }} // Ajusta el tamaño según sea necesario
+              style={{ width: 50, height: 50, marginBottom: 10, marginRight: "15" }}
+              resizeMode="contain" // Ajusta la imagen sin cortarla
             />
           )}
           <Text style={styles.itemText}>
@@ -169,20 +235,35 @@ export default function DeudasScreen() {
       <View style={styles.container}>
         {showForm ? (
           <ScrollView contentContainerStyle={styles.formContainer}>
-
             <Text style={styles.label}>Entidad Financiera</Text>
             <TextInput
               style={styles.input}
               value={entidad}
-              onChangeText={handleEntidadChange} // Cambia aquí para usar la nueva función
+              onChangeText={handleEntidadChange}
               placeholder="Ej: Banco XYZ"
               placeholderTextColor="#888"
             />
+            {sugerencias.length > 0 && (
+              <FlatList
+                data={sugerencias}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => {
+                    setEntidad(item);
+                    setSugerencias([]);
+                  }}>
+                    <Text style={styles.sugerenciaItem}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.sugerenciasContainer}
+              />
+            )}
 
             {imagenEntidad && (
               <Image
                 source={imagenEntidad}
-                style={{ width: 100, height: 100, alignSelf: 'center', marginBottom: 20 }} // Ajusta el tamaño según sea necesario
+                style={{ width: 100, height: 100, alignSelf: 'center', marginBottom: 20 }}
+                resizeMode="contain" // Ajusta la imagen sin cortarla
               />
             )}
 
@@ -260,7 +341,7 @@ export default function DeudasScreen() {
                 <Text style={styles.buttonText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
-                <Text style={styles.buttonText}>Guardar</Text>
+                <Text style={styles.buttonText}>{editingDeudaId ? "Actualizar" : "Guardar"}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -318,11 +399,50 @@ const styles = StyleSheet.create({
   entityImage: { width: 40, height: 40, padding: "5", borderRadius: 5 },
   itemText: { fontSize: 14, color: "#2C3E50", flex: 1 }, //letras del contenedor
 
-  itemText2: { position: "relative", fontSize: 18, color: "#2C3E50", flex: 1, left: "16", top: "9", transform: [{ translateY: -5 }], zIndex: 1 },
+  itemText2: {
+    position: "relative",
+    marginLeft: "33%",
+    fontSize: 16,
+    color: "#2C3E50",
+    flex: 1,
+    left: 16,
+    top: 10,
+    transform: [{ translateY: -5 }],
+    zIndex: 1,
+    width: 90,
+    borderWidth: 1,
+    borderColor: "#ffff",
+    borderRadius: 5,
+    backgroundColor: "#ffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3
+  },
 
-  deleteButton: { backgroundColor: "#E74C3C", borderRadius: 5,width:"180",height:"80",marginTop:"20", alignItems: "center", justifyContent: "center" },
-  deleteButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold",paddingEnd:"2" },
-  
+  sugerenciasContainer: {
+  backgroundColor: "#fff",
+  borderRadius: 5,
+  elevation: 3,
+  marginTop: 5,
+  maxHeight: 150,
+  borderColor: "#ddd",
+  borderWidth: 1,
+},
+sugerenciaItem: {
+  padding: 10,
+  borderBottomWidth: 1,
+  borderBottomColor: "#ddd",
+  color: "#333",
+},
+
+  deleteButton: { backgroundColor: "#E74C3C", borderRadius: 5, width: "180", height: "80", marginTop: "20", alignItems: "center", justifyContent: "center" },
+  deleteButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold", paddingEnd: "2" },
+
+  editButton: { backgroundColor: "#3498DB", borderRadius: 5, width: "180", height: "80", marginTop: "20", alignItems: "center", justifyContent: "center" },
+  editButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold", paddingEnd: "2" },
+
   floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
   floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },
 
