@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  View, Text, StyleSheet, TextInput, Alert, FlatList, TouchableOpacity, ActivityIndicator, Image
-} from "react-native";
+import { View, Text, StyleSheet, TextInput, Alert, FlatList, TouchableOpacity, ActivityIndicator, Image } from "react-native";
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../credenciales";
 
@@ -15,16 +13,16 @@ const entidadImagenes = {
   "Banco de Bogota": require('../assets/Banco De Bogota.png'),
 };
 
-const entidadesFinancieras = ["Bancolombia", "Agaval", "Banco de Bogota", "Davivienda", "Banco de Occidente", "Banco Popular", "Banco Agrario de Colombia", "BBVA Colombia", "Banco AV Villas", "Banco Caja Social", "Banco GNB Sudameris", "Scotiabank Colpatria", "Banco Pichincha", "Bancoomeva", "Banco W", "Banco Finandina", "Banco Falabella", "Bancamía", "Banco Credifinanciera", "Banco Coopcentral",
-];
+const entidadesFinancieras = ["Bancolombia", "Agaval", "Banco de Bogota", "Davivienda", "Banco de Occidente", "Banco Popular", "Banco Agrario de Colombia", "BBVA Colombia", "Banco AV Villas", "Banco Caja Social", "Banco GNB Sudameris", "Scotiabank Colpatria", "Banco Pichincha", "Bancoomeva", "Banco W", "Banco Finandina", "Banco Falabella", "Bancamía", "Banco Credifinanciera", "Banco Coopcentral"];
 
 export default function DeudasScreen() {
   const [showForm, setShowForm] = useState(false);
   const [entidad, setEntidad] = useState("");
-  const [monto, setMonto] = useState("");
+  const [deudaTotal, setDeudaTotal] = useState("");
+  const [valorCuota, setValorCuota] = useState(""); // Nuevo estado para el valor de la cuota
+  const [pagosRealizados, setPagosRealizados] = useState(0);
   const [atrasado, setAtrasado] = useState(ATRASADO_OPCIONES.NO);
   const [cuotas, setCuotas] = useState(1);
-  const [deudaPendiente, setDeudaPendiente] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
   const [deudas, setDeudas] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -48,37 +46,38 @@ export default function DeudasScreen() {
     }
   };
 
+  const calcularDeudaPendiente = (deudaTotal, pagosRealizados) => {
+    const deudaPendiente = deudaTotal - pagosRealizados;
+    return deudaPendiente > 0 ? deudaPendiente.toFixed(2) : 0;
+  };
+
   const handleSubmit = async () => {
-    if (!entidad.trim() || !monto.trim() || !fechaInicio.trim()) {
+    if (!entidad.trim() || !deudaTotal.trim() || !valorCuota.trim() || !fechaInicio.trim()) {
       Alert.alert("Error", "Todos los campos son obligatorios.");
       return;
     }
 
-    const montoNum = Number(monto.replace(/,/g, '.'));
-    if (isNaN(montoNum) || montoNum <= 0) {
-      Alert.alert("Error", "El monto debe ser un número válido.");
+    const deudaTotalNum = Number(deudaTotal.replace(/,/g, '.'));
+    const valorCuotaNum = Number(valorCuota.replace(/,/g, '.'));
+
+    if (isNaN(deudaTotalNum) || deudaTotalNum <= 0) {
+      Alert.alert("Error", "La deuda total debe ser un número válido.");
       return;
     }
 
-    if (cuotas <= 0) {
-      Alert.alert("Error", "El número de cuotas debe ser mayor a 0.");
+    if (isNaN(valorCuotaNum) || valorCuotaNum <= 0) {
+      Alert.alert("Error", "El valor de la cuota debe ser un número válido.");
       return;
-    }
-
-    if (atrasado === ATRASADO_OPCIONES.SI) {
-      const deudaPendienteNum = parseFloat(deudaPendiente);
-      if (!deudaPendiente.trim() || isNaN(deudaPendienteNum) || deudaPendienteNum <= 0) {
-        Alert.alert("Error", "Debe ingresar un valor válido para la deuda pendiente.");
-        return;
-      }
     }
 
     const nuevaDeuda = {
       entidad,
-      monto: montoNum.toFixed(2),
+      deudaTotal: deudaTotalNum.toFixed(2),
+      valorCuota: valorCuotaNum.toFixed(2), // Guardar el valor de la cuota
+      pagosRealizados: 0,
+      cuotasPagadas: 0,
       atrasado,
       cuotas,
-      deudaPendiente: atrasado === ATRASADO_OPCIONES.SI ? parseFloat(deudaPendiente).toFixed(2) : null,
       fechaInicio,
       imagen: entidadImagenes[entidad] || null,
     };
@@ -111,10 +110,11 @@ export default function DeudasScreen() {
   const handleEditDeuda = (deuda) => {
     setEditingDeudaId(deuda.id);
     setEntidad(deuda.entidad);
-    setMonto(deuda.monto);
+    setDeudaTotal(deuda.deudaTotal);
+    setValorCuota(deuda.valorCuota); // Establecer el valor de la cuota
+    setPagosRealizados(deuda.pagosRealizados);
     setAtrasado(deuda.atrasado);
     setCuotas(deuda.cuotas);
-    setDeudaPendiente(deuda.deudaPendiente || "");
     setFechaInicio(deuda.fechaInicio);
     setImagenEntidad(deuda.imagen || null);
     setShowForm(true);
@@ -123,10 +123,11 @@ export default function DeudasScreen() {
   const handleCloseForm = () => {
     setShowForm(false);
     setEntidad("");
-    setMonto("");
+    setDeudaTotal("");
+    setValorCuota(""); // Limpiar el valor de la cuota
+    setPagosRealizados(0);
     setAtrasado(ATRASADO_OPCIONES.NO);
     setCuotas(1);
-    setDeudaPendiente("");
     setFechaInicio("");
     setImagenEntidad(null);
     setEditingDeudaId(null);
@@ -144,23 +145,82 @@ export default function DeudasScreen() {
     }
   };
 
+  const handleRegistrarPago = async (id, montoPago) => {
+    try {
+      const deuda = deudas.find((deuda) => deuda.id === id);
+      const montoPagoNum = parseFloat(montoPago);
+      
+      if (isNaN(montoPagoNum) || montoPagoNum <= 0) {
+        Alert.alert("Error", "Ingrese un monto de pago válido.");
+        return;
+      }
+  
+      let nuevosPagosRealizados = parseFloat(deuda.pagosRealizados) + montoPagoNum;
+      let nuevaDeudaPendiente = parseFloat(deuda.deudaTotal) - nuevosPagosRealizados;
+      let nuevasCuotasPagadas = deuda.cuotasPagadas;
+  
+      // Si el pago es mayor o igual al valor de la cuota, aumenta la cuota pagada
+      while (montoPagoNum >= parseFloat(deuda.valorCuota) && nuevasCuotasPagadas < deuda.cuotas) {
+        nuevasCuotasPagadas += 1;
+        montoPagoNum -= parseFloat(deuda.valorCuota);
+      }
+  
+      // Si la deuda está completamente pagada, eliminarla
+      if (nuevaDeudaPendiente <= 0) {
+        await deleteDeudaFromFirestore(id);
+        Alert.alert("Éxito", "La deuda ha sido completamente pagada y eliminada.");
+      } else {
+        // Actualizar la deuda en Firestore
+        await updateDeudaInFirestore(id, {
+          pagosRealizados: nuevosPagosRealizados,
+          cuotasPagadas: nuevasCuotasPagadas,
+          deudaTotal: nuevaDeudaPendiente.toFixed(2),
+        });
+        Alert.alert("Éxito", "El pago se ha registrado correctamente.");
+      }
+  
+      fetchDeudas();
+    } catch (error) {
+      Alert.alert("Error", "No se pudo registrar el pago.");
+    }
+  };
+  
+
+  const mostrarDetallesDeuda = (deuda) => {
+    const deudaPendiente = calcularDeudaPendiente(deuda.deudaTotal, deuda.pagosRealizados);
+    const cuotasPendientes = deuda.cuotas - deuda.cuotasPagadas;
+
+    Alert.alert(
+      "Detalles de la Deuda",
+      `📌 ${deuda.entidad}\n\n💰 **Deuda Total:** $${deuda.deudaTotal}\n📆 **Fecha Inicio:** ${deuda.fechaInicio}\n💳 **Cuotas Pendientes:** ${cuotasPendientes}\n💲 **Valor Cuota:** $${deuda.valorCuota}\n🔹 **Deuda Pendiente:** $${deudaPendiente}`,
+      [{ text: "Cerrar", style: "cancel" }]
+    );
+  };
+
   const renderItem = useCallback(({ item }) => {
+    const deudaPendiente = calcularDeudaPendiente(item.deudaTotal, item.pagosRealizados);
+    const cuotasPendientes = item.cuotas - item.cuotasPagadas;
+
     const renderRightActions = () => (
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteDeuda(item.id)}
-      >
-        <Text style={styles.deleteButtonText}>Eliminar</Text>
-      </TouchableOpacity>
+      <View style={styles.rightActions}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteDeuda(item.id)}
+        >
+          <Text style={styles.deleteButtonText}>Eliminar</Text>
+        </TouchableOpacity>
+      </View>
     );
 
     const renderLeftActions = () => (
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => handleEditDeuda(item)}
-      >
-        <Text style={styles.editButtonText}>Editar</Text>
-      </TouchableOpacity>
+      <View style={styles.leftActions}>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => handleEditDeuda(item)}
+        >
+          <Text style={styles.editButtonText}>Editar</Text>
+        </TouchableOpacity>
+      </View>
     );
 
     return (
@@ -168,34 +228,54 @@ export default function DeudasScreen() {
         renderRightActions={renderRightActions}
         renderLeftActions={renderLeftActions}
       >
-        <Text style={styles.itemText2}> {item.fechaInicio}</Text>
-
-        <View style={[styles.item, { borderLeftColor: item.atrasado === ATRASADO_OPCIONES.SI ? "#E74C3C" : "#3498DB" }]}>
-          {item.imagen && (
-            <Image
-              source={item.imagen}
-              style={{ width: 50, height: 50, marginBottom: 10, marginRight: "15" }}
-              resizeMode="contain"
-            />
-          )}
-          <Text style={styles.itemText}>
-            ${parseFloat(item.monto).toLocaleString("es-ES", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </Text>
-
-          {item.atrasado === ATRASADO_OPCIONES.SI && (
-            <Text style={styles.itemText}>
-              Atrasada: ${parseFloat(item.deudaPendiente).toLocaleString("es-ES", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </Text>
-          )}
-          <Text style={styles.itemText}>Cuotas: {item.cuotas}</Text>
-
-        </View>
+        <TouchableOpacity onPress={() => mostrarDetallesDeuda(item)}>
+          <View style={styles.itemContainer}>
+            <Text style={styles.itemText2}> {item.fechaInicio}</Text>
+            <View style={[styles.item, { borderLeftColor: item.atrasado === ATRASADO_OPCIONES.SI ? "#E74C3C" : "#3498DB" }]}>
+              {item.imagen && (
+                <Image
+                  source={item.imagen}
+                  style={styles.entityImage}
+                  resizeMode="contain"
+                />
+              )}
+              <View style={styles.itemContent}>
+                <Text style={styles.itemText}>
+                  <Text style={styles.itemTextLabel}>Valor Cuota: </Text>
+                  <Text style={styles.itemTextValue}>${parseFloat(item.valorCuota).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                </Text>
+                <Text style={styles.itemText}>
+                  <Text style={styles.itemTextLabel}>Cuota: </Text>
+                  <Text style={styles.itemTextValue}>{item.cuotasPagadas + 1} de {item.cuotas}</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.pagoButton}
+                  onPress={() => {
+                    Alert.prompt(
+                      "Registrar Pago",
+                      "Ingrese el monto del pago:",
+                      [
+                        {
+                          text: "Cancelar",
+                          style: "cancel",
+                        },
+                        {
+                          text: "Registrar",
+                          onPress: (montoPago) => handleRegistrarPago(item.id, montoPago),
+                        },
+                      ],
+                      "plain-text",
+                      "",
+                      "numeric"
+                    );
+                  }}
+                >
+                  <Text style={styles.pagoButtonText}>Registrar Pago</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
       </Swipeable>
     );
   }, []);
@@ -237,26 +317,40 @@ export default function DeudasScreen() {
               />
             )}
 
-            <Text style={styles.label}>Monto mensual</Text>
+            <Text style={styles.label}>Deuda Total</Text>
             <TextInput
               style={styles.input}
-              value={monto}
-              onChangeText={setMonto}
+              value={deudaTotal}
+              onChangeText={setDeudaTotal}
               keyboardType="numeric"
-              placeholder="Ej: 1500.00"
+              placeholder="Ej: 10000.00"
               placeholderTextColor="#888"
             />
+
+            <Text style={styles.label}>Valor de la Cuota</Text>
+            <TextInput
+              style={styles.input}
+              value={valorCuota}
+              onChangeText={setValorCuota}
+              keyboardType="numeric"
+              placeholder="Ej: 500.00"
+              placeholderTextColor="#888"
+            />
+
             <Text style={styles.label}>Fecha Deuda</Text>
-            <TextInput style={styles.input} value={fechaInicio} onChangeText={setFechaInicio} keyboardType="numeric"
-              placeholder="DD-MM-AAAA" placeholderTextColor="#888" />
+            <TextInput
+              style={styles.input}
+              value={fechaInicio}
+              onChangeText={setFechaInicio}
+              keyboardType="numeric"
+              placeholder="DD-MM-AAAA"
+              placeholderTextColor="#888"
+            />
 
             <Text style={styles.label}>¿Estás atrasado en los pagos?</Text>
             <View style={styles.toggleContainer}>
               <TouchableOpacity
-                onPress={() => {
-                  setAtrasado(ATRASADO_OPCIONES.NO);
-                  setDeudaPendiente("");
-                }}
+                onPress={() => setAtrasado(ATRASADO_OPCIONES.NO)}
                 style={[
                   styles.toggleButton,
                   atrasado === ATRASADO_OPCIONES.NO ? styles.selectedYes : styles.unselected,
@@ -274,20 +368,6 @@ export default function DeudasScreen() {
                 <Text style={styles.toggleText}>Sí</Text>
               </TouchableOpacity>
             </View>
-
-            {atrasado === ATRASADO_OPCIONES.SI && (
-              <>
-                <Text style={styles.label}>Valor de la deuda pendiente</Text>
-                <TextInput
-                  style={styles.input}
-                  value={deudaPendiente}
-                  onChangeText={setDeudaPendiente}
-                  keyboardType="numeric"
-                  placeholder="Ej: 500.00"
-                  placeholderTextColor="#888"
-                />
-              </>
-            )}
 
             <Text style={styles.label}>Número de cuotas pendientes</Text>
             <View style={styles.counterContainer}>
@@ -325,16 +405,6 @@ export default function DeudasScreen() {
                 data={deudas}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
-                ListHeaderComponent={
-                  <View>
-                    {/* Add any header content here */}
-                  </View>
-                }
-                ListFooterComponent={
-                  <View>
-                    {/* Add any footer content here */}
-                  </View>
-                }
               />
             )}
           </View>
@@ -353,12 +423,16 @@ export default function DeudasScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
 
-  container: {
-    flex: 1, padding: "15", backgroundColor: "#F5F5F5",
-  },// Fondo claro
+  modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
+  modalContent: { width: "85%", backgroundColor: "white", padding: 20, borderRadius: 10, alignItems: "center" },
+  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 15, color: "#2C3E50" },
+  detailText: { fontSize: 16, marginVertical: 5, color: "#34495E" },
+  label: { fontWeight: "bold", color: "#2C3E50" },
+  closeButton: { marginTop: 20, backgroundColor: "#3498DB", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 5 },
+  closeButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  container: { flex: 1, padding: 15, backgroundColor: "#F5F5F5" },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 10, textAlign: "center", color: "#2C3E50" },
   formContainer: { backgroundColor: "#FFFFFF", padding: 20, borderRadius: 15, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5, marginBottom: 10, marginTop: 10 },
   listContainer: { flex: 1, marginTop: -7 },
@@ -374,62 +448,28 @@ const styles = StyleSheet.create({
   counterButton: { backgroundColor: "#3498DB", padding: 12, borderRadius: 8, marginHorizontal: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 3 },
   counterText: { fontSize: 20, color: "#FFFFFF", fontWeight: "600" },
   counterValue: { fontSize: 18, color: "#2C3E50", marginHorizontal: 10 },
-
-  item: { backgroundColor: "#FFFFFF", padding: 12, borderRadius: 10, marginTop: "-9", flexDirection: "row", alignItems: "center", borderLeftWidth: 15, borderLeftColor: "#3498DB", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
-  entityImage: { width: 40, height: 40, padding: "5", borderRadius: 5 },
-  itemText: { fontSize: 14, color: "#2C3E50", flex: 1 }, //letras del contenedor
-
-  itemText2: {
-    position: "relative",
-    marginLeft: "33%",
-    fontSize: 16,
-    color: "#2C3E50",
-    flex: 1,
-    left: 16,
-    top: 10,
-    transform: [{ translateY: -5 }],
-    zIndex: 1,
-    width: 90,
-    borderWidth: 1,
-    borderColor: "#ffff",
-    borderRadius: 5,
-    backgroundColor: "#ffff",
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3
-  },
-
-  sugerenciasContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 5,
-    elevation: 3,
-    marginTop: 5,
-    maxHeight: 150,
-    borderColor: "#ddd",
-    borderWidth: 1,
-  },
-  sugerenciaItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-    color: "#333",
-  },
-
-  deleteButton: { backgroundColor: "#E74C3C", borderRadius: 5, width: "180", height: "80", marginTop: "20", alignItems: "center", justifyContent: "center" },
-  deleteButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold", paddingEnd: "2" },
-
-  editButton: { backgroundColor: "#3498DB", borderRadius: 5, width: "180", height: "80", marginTop: "20", alignItems: "center", justifyContent: "center" },
-  editButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold", paddingEnd: "2" },
-
+  itemContainer: { marginBottom: 10 },
+  item: { backgroundColor: "#FFFFFF", padding: 15, borderRadius: 10, flexDirection: "row", alignItems: "center", borderLeftWidth: 15, borderLeftColor: "#3498DB", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
+  entityImage: { width: 50, height: 50, marginRight: 15, borderRadius: 5 },
+  itemContent: { flex: 1 },
+  itemText: { fontSize: 14, color: "#2C3E50", marginBottom: 5 },
+  itemTextLabel: { fontSize: 14, color: "#34495E" },
+  itemTextValue: { fontSize: 14, color: "#2C3E50", fontWeight: "bold" },
+  itemText2: { position: "relative", marginLeft: "33%", fontSize: 16, color: "#2C3E50", flex: 1, left: 16, top: 10, transform: [{ translateY: -5 }], zIndex: 1, width: 90, borderWidth: 1, borderColor: "#ffff", borderRadius: 5, backgroundColor: "#ffff", shadowColor: "#000", shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 },
+  sugerenciasContainer: { backgroundColor: "#fff", borderRadius: 5, elevation: 3, marginTop: 5, maxHeight: 150, borderColor: "#ddd", borderWidth: 1 },
+  sugerenciaItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#ddd", color: "#333" },
+  rightActions: { justifyContent: "center", alignItems: "flex-end", marginRight: 15 },
+  leftActions: { justifyContent: "center", alignItems: "flex-start", marginLeft: 15 },
+  deleteButton: { backgroundColor: "#E74C3C", borderRadius: 5, width: 82, height: 82, top: 8, justifyContent: "center", alignItems: "center" },
+  deleteButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold" },
+  editButton: { backgroundColor: "#3498DB", borderRadius: 5, width: 82, height: 82, top: 8, justifyContent: "center", alignItems: "center" },
+  editButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold" },
   floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
   floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },
-
   buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
   cancelButton: { backgroundColor: "#E74C3C", padding: 15, borderRadius: 10, flex: 1, marginRight: 10, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
   saveButton: { backgroundColor: "#2ECC71", padding: 15, borderRadius: 10, flex: 1, marginLeft: 10, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
   buttonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
-  floatingDateContainer: { position: "absolute", top: 20, left: "50%", transform: [{ translateX: -100 }], backgroundColor: "#2C3E50", paddingVertical: 8, paddingHorizontal: 15, borderRadius: 10, zIndex: 10 },
-  floatingDateText: { color: "#2C3E50", fontSize: 14, fontWeight: "bold" },
+  pagoButton: { backgroundColor: "#2ECC71", padding: 10, borderRadius: 5, alignItems: "center", marginTop: 10 },
+  pagoButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold" },
 });
