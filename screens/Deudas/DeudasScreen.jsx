@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../credenciales";
+import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../../credenciales";
 import DeudaForm from "./DeudaForm";
 import DeudaList from "./DeudaList";
 
