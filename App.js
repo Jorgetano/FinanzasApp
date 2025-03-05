@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import HomeScreen from "./screens/HomeScreen";
 import IngresosScreen from "./screens/IngresosScreen";
 import EgresosScreen from "./screens/EgresosScreen";
-import DeudasScreen from "./screens/DeudasScreen";
+import DeudasScreen from "./screens/./Deudas/DeudasScreen";
 import IngresoEgresos from "./screens/IngresoEgresos";
 
 const Tab = createBottomTabNavigator();
