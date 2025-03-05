@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } from "react-native";
-
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from "react-native";
 
 const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 
@@ -25,6 +24,21 @@ const DeudaForm = ({
   handleCloseForm,
   editingDeudaId,
 }) => {
+  const [cuotasPendientes, setCuotasPendientes] = useState(0);
+  const [cuotaActual, setCuotaActual] = useState(0);
+
+  useEffect(() => {
+    if (fechaInicio) {
+      const fechaInicioDate = new Date(fechaInicio);
+      const fechaActual = new Date();
+      const diffMeses = (fechaActual.getFullYear() - fechaInicioDate.getFullYear()) * 12 + (fechaActual.getMonth() - fechaInicioDate.getMonth());
+      const cuotasPagadas = Math.max(0, diffMeses);
+      const cuotasPendientesCalculadas = Math.max(0, cuotas - cuotasPagadas);
+      setCuotasPendientes(cuotasPendientesCalculadas);
+      setCuotaActual(cuotasPagadas + 1);
+    }
+  }, [fechaInicio, cuotas]);
+
   return (
     <View style={styles.formContainer}>
       <Text style={styles.label}>Entidad Financiera</Text>
@@ -76,7 +90,6 @@ const DeudaForm = ({
         style={styles.input}
         value={fechaInicio}
         onChangeText={setFechaInicio}
-        keyboardType="numeric"
         placeholder="DD-MM-AAAA"
         placeholderTextColor="#888"
       />
@@ -111,7 +124,7 @@ const DeudaForm = ({
         >
           <Text style={styles.counterText}>-</Text>
         </TouchableOpacity>
-        <Text style={styles.counterValue}>{cuotas}</Text>
+        <Text style={styles.counterValue}>{cuotasPendientes}</Text>
         <TouchableOpacity
           onPress={() => setCuotas(cuotas + 1)}
           style={styles.counterButton}
@@ -119,6 +132,9 @@ const DeudaForm = ({
           <Text style={styles.counterText}>+</Text>
         </TouchableOpacity>
       </View>
+
+      <Text style={styles.label}>Cuota Actual</Text>
+      <Text style={styles.cuotaInfo}>Cuota {cuotaActual} de {cuotas}</Text>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.cancelButton} onPress={handleCloseForm}>
@@ -152,6 +168,7 @@ const styles = StyleSheet.create({
   cancelButton: { backgroundColor: "#E74C3C", padding: 15, borderRadius: 10, flex: 1, marginRight: 10, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
   saveButton: { backgroundColor: "#2ECC71", padding: 15, borderRadius: 10, flex: 1, marginLeft: 10, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
   buttonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  cuotaInfo: { fontSize: 16, color: "#2C3E50", marginBottom: 15, textAlign: "center" },
 });
 
 export default DeudaForm;
