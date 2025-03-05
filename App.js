@@ -3,11 +3,11 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
-// Importamos las pantallas desde la carpeta screens
 import HomeScreen from "./screens/HomeScreen";
 import IngresosScreen from "./screens/IngresosScreen";
 import EgresosScreen from "./screens/EgresosScreen";
 import DeudasScreen from "./screens/DeudasScreen";
+import IngresoEgresos from "./screens/IngresoEgresos";
 
 const Tab = createBottomTabNavigator();
 
@@ -33,8 +33,8 @@ export default function App() {
         })}
       >
         {/* <Tab.Screen name="Inicio" component={HomeScreen} />
-        <Tab.Screen name="Ingresos" component={IngresosScreen} />
-        <Tab.Screen name="Egresos" component={EgresosScreen} /> */}
+        <Tab.Screen name="Ingresos" component={IngresosScreen} />*/
+        <Tab.Screen name="Egresos" component={IngresoEgresos} /> }
         <Tab.Screen name="Deudas" component={DeudasScreen} />
       </Tab.Navigator>
     </NavigationContainer>
