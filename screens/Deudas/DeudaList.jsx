@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator, Modal, TextInput, Button, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator, Modal, TextInput, Button } from "react-native";
 import { Swipeable } from 'react-native-gesture-handler';
 
 const DeudaList = ({
@@ -82,7 +82,6 @@ const DeudaList = ({
         <FlatList data={deudas} keyExtractor={(item) => item.id} renderItem={renderItem} />
       )}
 
-      {/* Modal para registrar pago */}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
