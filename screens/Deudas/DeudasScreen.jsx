@@ -5,9 +5,7 @@ import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, 
 import DeudaForm from "./DeudaForm";
 import DeudaList from "./DeudaList";
 
-
 const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
-
 
 const entidadImagenes = {
   "Bancolombia": require('../../assets/Bancolombia-.png'),
@@ -48,49 +46,17 @@ export default function DeudasScreen() {
     }
   };
 
-
-  const handleSubmit = async () => {
-    if (!entidad.trim() || !deudaTotal.trim() || !valorCuota.trim() || !fechaInicio.trim()) {
-      Alert.alert("Error", "Todos los campos son obligatorios.");
-      return;
-    }
-
-    const deudaTotalNum = Number(deudaTotal.replace(/,/g, '.'));
-    const valorCuotaNum = Number(valorCuota.replace(/,/g, '.'));
-
-    if (isNaN(deudaTotalNum) || deudaTotalNum <= 0) {
-      Alert.alert("Error", "La deuda total debe ser un número válido.");
-      return;
-    }
-
-    if (isNaN(valorCuotaNum) || valorCuotaNum <= 0) {
-      Alert.alert("Error", "El valor de la cuota debe ser un número válido.");
-      return;
-    }
-
-    const nuevaDeuda = {
-      entidad,
-      deudaTotal: deudaTotalNum.toFixed(2),
-      valorCuota: valorCuotaNum.toFixed(2),
-      pagosRealizados: 0,
-      cuotasPagadas: 0,
-      atrasado,
-      cuotas,
-      fechaInicio,
-      imagen: entidadImagenes[entidad] || null,
-    };
-
+  const handleSubmit = async (deuda) => {
     try {
       if (editingDeudaId) {
-        await updateDeudaInFirestore(editingDeudaId, nuevaDeuda);
+        await updateDeudaInFirestore(editingDeudaId, deuda);
         Alert.alert("Éxito", "La deuda se ha actualizado correctamente.");
       } else {
-        await addDeudaToFirestore(nuevaDeuda);
+        await addDeudaToFirestore(deuda);
         Alert.alert("Éxito", "La deuda se ha guardado correctamente.");
       }
 
       await fetchDeudas(); // Refrescar la lista de deudas
-
       handleCloseForm(); // Restablecer el formulario y cerrar
       setShowForm(false); // Asegurar que vuelve a la lista de deudas
     } catch (error) {
@@ -98,12 +64,10 @@ export default function DeudasScreen() {
     }
   };
 
-
   const handleDeleteDeuda = async (id) => {
     try {
       await deleteDeudaFromFirestore(id);
-      fetchDeudas();
-      Alert.alert("Éxito", "La deuda se ha eliminado correctamente.");
+      fetchDeudas(); // Recargar la lista de deudas después de eliminar
     } catch (error) {
       Alert.alert("Error", "No se pudo eliminar la deuda.");
     }
@@ -118,7 +82,7 @@ export default function DeudasScreen() {
     setAtrasado(deuda.atrasado);
     setCuotas(deuda.cuotas);
     setFechaInicio(deuda.fechaInicio);
-    setImagenEntidad(deuda.imagen || null);
+    setImagenEntidad(entidadImagenes[deuda.entidad] || null); // Asegúrate de pasar la imagen correcta
     setShowForm(true);
   };
 
@@ -141,64 +105,10 @@ export default function DeudasScreen() {
       const sugerenciasFiltradas = entidadesFinancieras.filter((entidad) =>
         entidad.toLowerCase().includes(texto.toLowerCase())
       );
-      setSugerencias(sugerenciasFiltradas); // Usa la prop aquí
+      setSugerencias(sugerenciasFiltradas);
     } else {
-      setSugerencias([]); // Usa la prop aquí
+      setSugerencias([]);
     }
-  };
-
-  const handleRegistrarPago = async (id, montoPago) => {
-    try {
-      const deuda = deudas.find((deuda) => deuda.id === id);
-      const montoPagoNum = parseFloat(montoPago);
-
-      if (isNaN(montoPagoNum) || montoPagoNum <= 0) {
-        Alert.alert("Error", "Ingrese un monto de pago válido.");
-        return;
-      }
-
-      let nuevosPagosRealizados = parseFloat(deuda.pagosRealizados) + montoPagoNum;
-      let nuevaDeudaPendiente = parseFloat(deuda.deudaTotal) - nuevosPagosRealizados;
-      let nuevasCuotasPagadas = deuda.cuotasPagadas;
-
-      while (montoPagoNum >= parseFloat(deuda.valorCuota) && nuevasCuotasPagadas < deuda.cuotas) {
-        nuevasCuotasPagadas += 1;
-        montoPagoNum -= parseFloat(deuda.valorCuota);
-      }
-
-      if (nuevaDeudaPendiente <= 0) {
-        await deleteDeudaFromFirestore(id);
-        Alert.alert("Éxito", "La deuda ha sido completamente pagada y eliminada.");
-      } else {
-
-        await updateDeudaInFirestore(id, {
-          pagosRealizados: nuevosPagosRealizados,
-          cuotasPagadas: nuevasCuotasPagadas,
-          deudaTotal: nuevaDeudaPendiente.toFixed(2),
-        });
-        Alert.alert("Éxito", "El pago se ha registrado correctamente.");
-      }
-
-      fetchDeudas();
-    } catch (error) {
-      Alert.alert("Error", "No se pudo registrar el pago.");
-    }
-  };
-
-  const mostrarDetallesDeuda = (deuda) => {
-    const deudaPendiente = calcularDeudaPendiente(deuda.deudaTotal, deuda.pagosRealizados);
-    const cuotasPendientes = deuda.cuotas - deuda.cuotasPagadas;
-
-    Alert.alert(
-      "Detalles de la Deuda",
-      `📌 ${deuda.entidad}\n\n💰 **Deuda Total:** $${deuda.deudaTotal}\n📆 **Fecha Inicio:** ${deuda.fechaInicio}\n💳 **Cuotas Pendientes:** ${cuotasPendientes}\n💲 **Valor Cuota:** $${deuda.valorCuota}\n🔹 **Deuda Pendiente:** $${deudaPendiente}`,
-      [{ text: "Cerrar", style: "cancel" }]
-    );
-  };
-
-  const calcularDeudaPendiente = (deudaTotal, pagosRealizados) => {
-    const deudaPendiente = deudaTotal - pagosRealizados;
-    return deudaPendiente > 0 ? deudaPendiente.toFixed(2) : 0;
   };
 
   return (
@@ -232,8 +142,6 @@ export default function DeudasScreen() {
             loading={loading}
             handleDeleteDeuda={handleDeleteDeuda}
             handleEditDeuda={handleEditDeuda}
-            handleRegistrarPago={handleRegistrarPago}
-            mostrarDetallesDeuda={mostrarDetallesDeuda}
           />
         )}
 

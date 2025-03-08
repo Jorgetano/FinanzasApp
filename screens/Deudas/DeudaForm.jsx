@@ -23,6 +23,7 @@ const DeudaForm = ({
   handleSubmit,
   handleCloseForm,
   editingDeudaId,
+  entidadImagenes={entidadImagenes} // Pasa entidadImagenes como prop
 }) => {
   const [cuotasPagadas, setCuotasPagadas] = useState(0);
 
@@ -32,18 +33,18 @@ const DeudaForm = ({
       const fechaInicioFormateada = `${anio}-${mes}-${dia}`;
       const fechaInicioDate = new Date(fechaInicioFormateada);
       const fechaActual = new Date();
-  
+
       if (fechaInicioDate > fechaActual) {
         setCuotasPagadas(0); // Si la fecha de inicio es en el futuro, no hay cuotas pagadas
       } else {
         let diffMeses =
           (fechaActual.getFullYear() - fechaInicioDate.getFullYear()) * 12 +
           (fechaActual.getMonth() - fechaInicioDate.getMonth());
-  
+
         if (fechaActual.getDate() < fechaInicioDate.getDate()) {
           diffMeses--; // Ajusta si el día actual es menor al día de inicio
         }
-  
+
         const cuotasPagadasCalculadas = Math.max(0, diffMeses);
         setCuotasPagadas(Math.min(cuotasPagadasCalculadas, cuotas)); // Asegúrate de no exceder el número total de cuotas
       }
@@ -52,17 +53,17 @@ const DeudaForm = ({
 
   const handleSubmitDeuda = () => {
     const deuda = {
-      id: editingDeudaId || Date.now().toString(),
       entidad,
       deudaTotal,
       valorCuota,
       fechaInicio,
       atrasado,
       cuotas,
-      cuotasPagadas, // Asegúrate de que cuotasPagadas esté incluido
-      imagenEntidad,
+      cuotasPagadas,
+      imagenEntidad: entidadImagenes[entidad] || null, // Asegúrate de pasar la imagen correcta
     };
-  
+
+    console.log("Deuda a guardar:", deuda); // Depuración
     handleSubmit(deuda);
   };
 
@@ -75,111 +76,106 @@ const DeudaForm = ({
     </TouchableOpacity>
   );
 
-  const renderForm = () => (
-    <View style={styles.formContainer}>
-      <Text style={styles.label}>Entidad Financiera</Text>
-      <TextInput
-        style={styles.input}
-        value={entidad}
-        onChangeText={handleEntidadChange}
-        placeholder="Ej: Banco XYZ"
-        placeholderTextColor="#888"
-      />
-      {sugerencias.length > 0 && (
-        <FlatList
-          data={sugerencias}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderItem}
-          style={styles.sugerenciasContainer}
-        />
-      )}
-
-      <Text style={styles.label}>Deuda Total</Text>
-      <TextInput
-        style={styles.input}
-        value={deudaTotal}
-        onChangeText={setDeudaTotal}
-        keyboardType="numeric"
-        placeholder="Ej: 10000.00"
-        placeholderTextColor="#888"
-      />
-
-      <Text style={styles.label}>Valor de la Cuota</Text>
-      <TextInput
-        style={styles.input}
-        value={valorCuota}
-        onChangeText={setValorCuota}
-        keyboardType="numeric"
-        placeholder="Ej: 500.00"
-        placeholderTextColor="#888"
-      />
-
-      <Text style={styles.label}>Fecha Deuda</Text>
-      <TextInput
-        style={styles.input}
-        value={fechaInicio}
-        onChangeText={setFechaInicio}
-        placeholder="DD-MM-AAAA"
-        placeholderTextColor="#888"
-      />
-
-      <Text style={styles.label}>¿Estás atrasado en los pagos?</Text>
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity
-          onPress={() => setAtrasado(ATRASADO_OPCIONES.NO)}
-          style={[
-            styles.toggleButton,
-            atrasado === ATRASADO_OPCIONES.NO ? styles.selectedYes : styles.unselected,
-          ]}
-        >
-          <Text style={styles.toggleText}>No</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setAtrasado(ATRASADO_OPCIONES.SI)}
-          style={[
-            styles.toggleButton,
-            atrasado === ATRASADO_OPCIONES.SI ? styles.selectedNo : styles.unselected,
-          ]}
-        >
-          <Text style={styles.toggleText}>Sí</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.label}>Número de cuotas</Text>
-      <View style={styles.counterContainer}>
-        <TouchableOpacity
-          onPress={() => setCuotas(Math.max(1, cuotas - 1))}
-          style={styles.counterButton}
-        >
-          <Text style={styles.counterText}>-</Text>
-        </TouchableOpacity>
-        <Text style={styles.counterValue}>{cuotas}</Text>
-        <TouchableOpacity
-          onPress={() => setCuotas(cuotas + 1)}
-          style={styles.counterButton}
-        >
-          <Text style={styles.counterText}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.label}>Cuota Actual</Text>
-      <Text style={styles.cuotaInfo}>Cuota {cuotasPagadas + 1} de {cuotas}</Text>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCloseForm}>
-          <Text style={styles.buttonText}>Cancelar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSubmitDeuda}>
-          <Text style={styles.buttonText}>{editingDeudaId ? "Actualizar" : "Guardar"}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
   return (
     <FlatList
       data={[{ key: "form" }]}
-      renderItem={renderForm}
+      renderItem={() => (
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>Entidad Financiera</Text>
+          <TextInput
+            style={styles.input}
+            value={entidad}
+            onChangeText={handleEntidadChange}
+            placeholder="Ej: Banco XYZ"
+            placeholderTextColor="#888"
+          />
+          {sugerencias.length > 0 && (
+            <FlatList
+              data={sugerencias}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={renderItem}
+              style={styles.sugerenciasContainer}
+            />
+          )}
+
+          <Text style={styles.label}>Deuda Total</Text>
+          <TextInput
+            style={styles.input}
+            value={deudaTotal}
+            onChangeText={setDeudaTotal}
+            keyboardType="numeric"
+            placeholder="Ej: 10000.00"
+            placeholderTextColor="#888"
+          />
+
+          <Text style={styles.label}>Valor de la Cuota</Text>
+          <TextInput
+            style={styles.input}
+            value={valorCuota}
+            onChangeText={setValorCuota}
+            keyboardType="numeric"
+            placeholder="Ej: 500.00"
+            placeholderTextColor="#888"
+          />
+
+          <Text style={styles.label}>Fecha Deuda</Text>
+          <TextInput
+            style={styles.input}
+            value={fechaInicio}
+            onChangeText={setFechaInicio}
+            placeholder="DD-MM-AAAA"
+            placeholderTextColor="#888"
+          />
+
+          <Text style={styles.label}>¿Estás atrasado en los pagos?</Text>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              onPress={() => setAtrasado(ATRASADO_OPCIONES.NO)}
+              style={[
+                styles.toggleButton,
+                atrasado === ATRASADO_OPCIONES.NO ? styles.selectedYes : styles.unselected,
+              ]}
+            >
+              <Text style={styles.toggleText}>No</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setAtrasado(ATRASADO_OPCIONES.SI)}
+              style={[
+                styles.toggleButton,
+                atrasado === ATRASADO_OPCIONES.SI ? styles.selectedNo : styles.unselected,
+              ]}
+            >
+              <Text style={styles.toggleText}>Sí</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.label}>Número de cuotas</Text>
+          <View style={styles.counterContainer}>
+            <TouchableOpacity
+              onPress={() => setCuotas(Math.max(1, cuotas - 1))}
+              style={styles.counterButton}
+            >
+              <Text style={styles.counterText}>-</Text>
+            </TouchableOpacity>
+            <Text style={styles.counterValue}>{cuotas}</Text>
+            <TouchableOpacity
+              onPress={() => setCuotas(cuotas + 1)}
+              style={styles.counterButton}
+            >
+              <Text style={styles.counterText}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCloseForm}>
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSubmitDeuda}>
+              <Text style={styles.buttonText}>{editingDeudaId ? "Actualizar" : "Guardar"}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
       keyExtractor={(item) => item.key}
       contentContainerStyle={styles.scrollViewContainer}
     />

@@ -18,10 +18,12 @@ const db = getFirestore(app);
 // Agregar una nueva deuda
 export const addDeudaToFirestore = async (deuda) => {
   try {
-    await addDoc(collection(db, "Deudas"), deuda);
-    console.log("Deuda guardada correctamente");
+    const docRef = await addDoc(collection(db, "Deudas"), deuda);
+    console.log("Deuda guardada con ID:", docRef.id);
+    return docRef.id; // Devuelve el ID generado por Firestore
   } catch (error) {
     console.error("Error al guardar la deuda:", error);
+    throw error;
   }
 };
 
@@ -39,10 +41,11 @@ export const getDeudasFromFirestore = async () => {
 // Eliminar una deuda por ID
 export const deleteDeudaFromFirestore = async (id) => {
   try {
+    console.log("Eliminando deuda con ID:", id);
     await deleteDoc(doc(db, "Deudas", id));
     console.log("Deuda eliminada correctamente");
   } catch (error) {
-    console.error("Error eliminando deuda: ", error);
+    console.error("Error eliminando deuda: ", error.message);
     throw error;
   }
 };
@@ -50,11 +53,12 @@ export const deleteDeudaFromFirestore = async (id) => {
 // Actualizar una deuda por ID
 export const updateDeudaInFirestore = async (id, nuevaDeuda) => {
   try {
-    const deudaRef = doc(db, "Deudas", id); // Crea una referencia al documento
-    await updateDoc(deudaRef, nuevaDeuda); // Actualiza el documento
+    console.log("Actualizando deuda con ID:", id);
+    const deudaRef = doc(db, "Deudas", id);
+    await updateDoc(deudaRef, nuevaDeuda);
     console.log("Deuda actualizada correctamente");
   } catch (error) {
-    console.error("Error al actualizar la deuda: ", error);
+    console.error("Error al actualizar la deuda: ", error.message);
     throw error;
   }
 };

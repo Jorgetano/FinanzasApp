@@ -37,7 +37,7 @@ const DeudaList = ({
         </TouchableOpacity>
       </View>
     );
-
+  
     const renderLeftActions = () => (
       <View style={styles.leftActions}>
         <TouchableOpacity style={styles.editButton} onPress={() => handleEditDeuda(item)}>
@@ -45,14 +45,14 @@ const DeudaList = ({
         </TouchableOpacity>
       </View>
     );
-
+  
     return (
       <Swipeable renderRightActions={renderRightActions} renderLeftActions={renderLeftActions}>
         <TouchableOpacity onPress={() => mostrarDetallesDeuda(item)}>
           <View style={styles.itemContainer}>
             <Text style={styles.itemText2}> {item.fechaInicio}</Text>
             <View style={[styles.item, { borderLeftColor: item.atrasado === "Sí" ? "#E74C3C" : "#3498DB" }]}>
-              {item.imagen && <Image source={item.imagen} style={styles.entityImage} resizeMode="contain" />}
+              {item.imagenEntidad && <Image source={item.imagenEntidad} style={styles.entityImage} resizeMode="contain" />}
               <View style={styles.itemContent}>
                 <Text style={styles.itemText}>
                   <Text style={styles.itemTextLabel}>Valor Cuota: </Text>
@@ -60,7 +60,7 @@ const DeudaList = ({
                 </Text>
                 <Text style={styles.itemText}>
                   <Text style={styles.itemTextLabel}>Cuota: </Text>
-                  <Text style={styles.itemTextValue}>{item.cuotasPagadas + 1} de {item.cuotas}</Text>
+                  <Text style={styles.itemTextValue}>{item.cuotasPagadas} de {item.cuotas}</Text>
                 </Text>
                 <TouchableOpacity style={styles.pagoButton} onPress={() => handleOpenModal(item.id)}>
                   <Text style={styles.pagoButtonText}>Registrar Pago</Text>
@@ -72,7 +72,7 @@ const DeudaList = ({
       </Swipeable>
     );
   }, []);
-
+  
   return (
     <View style={styles.listContainer}>
       <Text style={styles.title}>Deudas Registradas</Text>
