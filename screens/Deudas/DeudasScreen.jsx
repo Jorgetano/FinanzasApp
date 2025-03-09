@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../../credenciales";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  addDeudaToFirestore,
+  getDeudasFromFirestore,
+  deleteDeudaFromFirestore,
+  updateDeudaInFirestore,
+} from "../../credenciales";
 import DeudaForm from "./DeudaForm";
 import DeudaList from "./DeudaList";
 
 const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 
+// Mapa de entidades a imágene
 const entidadImagenes = {
   "Bancolombia": require('../../assets/Bancolombia-.png'),
   "Agaval": require('../../assets/Agaval.webp'),
@@ -38,7 +44,11 @@ export default function DeudasScreen() {
     setLoading(true);
     try {
       const data = await getDeudasFromFirestore();
-      setDeudas(data);
+      const deudasConImagenes = data.map((deuda) => ({
+        ...deuda,
+        imagen: entidadImagenes[deuda.entidad] || null, // Mapea la imagen
+      }));
+      setDeudas(deudasConImagenes);
     } catch (error) {
       Alert.alert("Error", "No se pudieron cargar las deudas. Inténtelo de nuevo más tarde.");
     } finally {
@@ -82,7 +92,7 @@ export default function DeudasScreen() {
     setAtrasado(deuda.atrasado);
     setCuotas(deuda.cuotas);
     setFechaInicio(deuda.fechaInicio);
-    setImagenEntidad(entidadImagenes[deuda.entidad] || null); // Asegúrate de pasar la imagen correcta
+    setImagenEntidad(deuda.imagen || null);
     setShowForm(true);
   };
 
@@ -106,8 +116,56 @@ export default function DeudasScreen() {
         entidad.toLowerCase().includes(texto.toLowerCase())
       );
       setSugerencias(sugerenciasFiltradas);
+  
+      // Actualizar la imagen de la entidad si existe
+      const imagen = entidadImagenes[texto];
+      if (imagen) {
+        setImagenEntidad(imagen);
+      } else {
+        setImagenEntidad(null);
+      }
     } else {
       setSugerencias([]);
+      setImagenEntidad(null);
+    }
+  };
+
+  const calcularDeudaPendiente = (deudaTotal, pagosRealizados) => {
+    return parseFloat(deudaTotal) - parseFloat(pagosRealizados);
+  };
+
+  const mostrarDetallesDeuda = (deuda) => {
+    const deudaPendiente = calcularDeudaPendiente(deuda.deudaTotal, deuda.pagosRealizados);
+    const cuotasPendientes = deuda.cuotas - deuda.cuotasPagadas;
+
+    Alert.alert(
+      "Detalles de la Deuda",
+      `                           📌 ${deuda.entidad}\n\n💰 Deuda Total: $${deuda.deudaTotal}\n📆 Fecha Inicio: ${deuda.fechaInicio}\n💳 Cuotas Pendientes: ${cuotasPendientes}\n💲 Valor Cuota: $${deuda.valorCuota}\n🔹 Deuda Pendiente: $${deudaPendiente}`,
+      [{ text: "Cerrar", style: "cancel" }]
+    );
+  };
+
+  const handleRegistrarPago = async (id, monto) => {
+    try {
+      const deuda = deudas.find((d) => d.id === id);
+      if (!deuda) {
+        Alert.alert("Error", "No se encontró la deuda.");
+        return;
+      }
+
+      const nuevoPago = parseFloat(monto);
+      if (isNaN(nuevoPago)) {
+        Alert.alert("Error", "El monto ingresado no es válido.");
+        return;
+      }
+
+      const pagosActualizados = parseFloat(deuda.pagosRealizados) + nuevoPago;
+      await updateDeudaInFirestore(id, { pagosRealizados: pagosActualizados });
+
+      Alert.alert("Éxito", "El pago se ha registrado correctamente.");
+      fetchDeudas(); // Actualizar la lista de deudas
+    } catch (error) {
+      Alert.alert("Error", "No se pudo registrar el pago.");
     }
   };
 
@@ -128,6 +186,8 @@ export default function DeudasScreen() {
             setAtrasado={setAtrasado}
             cuotas={cuotas}
             setCuotas={setCuotas}
+            pagosRealizados={pagosRealizados}
+            setPagosRealizados={setPagosRealizados}
             imagenEntidad={imagenEntidad}
             sugerencias={sugerencias}
             setSugerencias={setSugerencias}
@@ -135,6 +195,7 @@ export default function DeudasScreen() {
             handleSubmit={handleSubmit}
             handleCloseForm={handleCloseForm}
             editingDeudaId={editingDeudaId}
+            entidadImagenes={entidadImagenes}
           />
         ) : (
           <DeudaList
@@ -142,6 +203,8 @@ export default function DeudasScreen() {
             loading={loading}
             handleDeleteDeuda={handleDeleteDeuda}
             handleEditDeuda={handleEditDeuda}
+            mostrarDetallesDeuda={mostrarDetallesDeuda}
+            handleRegistrarPago={handleRegistrarPago}
           />
         )}
 
@@ -159,6 +222,9 @@ export default function DeudasScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, padding: 15, backgroundColor: "#F5F5F5" },
+  floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
+  floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },
   container: { flex: 1, padding: 15, backgroundColor: "#F5F5F5" },
   floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
   floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },

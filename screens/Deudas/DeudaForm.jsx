@@ -3,27 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from "r
 
 const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 
-const DeudaForm = ({
-  entidad,
-  setEntidad,
-  deudaTotal,
-  setDeudaTotal,
-  valorCuota,
-  setValorCuota,
-  fechaInicio,
-  setFechaInicio,
-  atrasado,
-  setAtrasado,
-  cuotas,
-  setCuotas,
-  imagenEntidad,
-  setSugerencias,
-  sugerencias,
-  handleEntidadChange,
-  handleSubmit,
-  handleCloseForm,
-  editingDeudaId,
-  entidadImagenes={entidadImagenes} // Pasa entidadImagenes como prop
+const DeudaForm = ({ entidad, setEntidad, deudaTotal, setDeudaTotal, valorCuota, setValorCuota, fechaInicio, setFechaInicio, atrasado, setAtrasado, cuotas, setCuotas, imagenEntidad, setSugerencias, sugerencias, handleEntidadChange, handleSubmit, handleCloseForm, editingDeudaId, entidadImagenes = {},
 }) => {
   const [cuotasPagadas, setCuotasPagadas] = useState(0);
 
@@ -60,18 +40,20 @@ const DeudaForm = ({
       atrasado,
       cuotas,
       cuotasPagadas,
-      imagenEntidad: entidadImagenes[entidad] || null, // Asegúrate de pasar la imagen correcta
+      imagenEntidad: entidadImagenes[entidad] || null, // Guarda la referencia de la imagen
     };
-
+  
     console.log("Deuda a guardar:", deuda); // Depuración
     handleSubmit(deuda);
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => {
-      setEntidad(item);
-      setSugerencias([]);
-    }}>
+    <TouchableOpacity
+      onPress={() => {
+        setEntidad(item);
+        setSugerencias([]);
+      }}
+    >
       <Text style={styles.sugerenciaItem}>{item}</Text>
     </TouchableOpacity>
   );
@@ -95,6 +77,14 @@ const DeudaForm = ({
               keyExtractor={(item, index) => index.toString()}
               renderItem={renderItem}
               style={styles.sugerenciasContainer}
+            />
+          )}
+
+          {imagenEntidad && (
+            <Image
+              source={imagenEntidad}
+              style={{ width: 100, height: 100, alignSelf: 'center', marginBottom: 20 }}
+              resizeMode="contain"
             />
           )}
 
@@ -181,6 +171,7 @@ const DeudaForm = ({
     />
   );
 };
+
 
 const styles = StyleSheet.create({
   scrollViewContainer: {

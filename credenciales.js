@@ -8,7 +8,7 @@ const firebaseConfig = {
   projectId: "finanzasapp-a5653",
   storageBucket: "finanzasapp-a5653.appspot.com",
   messagingSenderId: "919874936073",
-  appId: "1:919874936073:web:1f0ad29ed9dc0a05ebc7d8"
+  appId: "1:919874936073:web:1f0ad29ed9dc0a05ebc7d8",
 };
 
 // Inicializar Firebase

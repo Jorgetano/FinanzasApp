@@ -1,68 +1,103 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator, Modal, TextInput, Button } from "react-native";
-import { Swipeable } from 'react-native-gesture-handler';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  ActivityIndicator,
+} from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
+import RegistrarPagoModal from "../Deudas/RegistrarPago"; // Importa el nuevo componente
 
 const DeudaList = ({
   deudas,
   loading,
   handleDeleteDeuda,
   handleEditDeuda,
-  handleRegistrarPago,
   mostrarDetallesDeuda,
+  handleRegistrarPago,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [montoPago, setMontoPago] = useState("");
-  const [selectedDeudaId, setSelectedDeudaId] = useState(null);
+  const [selectedDeuda, setSelectedDeuda] = useState(null);
 
-  const handleOpenModal = (id) => {
-    setSelectedDeudaId(id);
+  // Abrir el modal para registrar un pago
+  const handleOpenModal = (deuda) => {
+    setSelectedDeuda(deuda);
     setModalVisible(true);
   };
 
-  const handleConfirmPago = () => {
-    if (!montoPago.trim()) {
-      Alert.alert("Error", "Debe ingresar un monto válido.");
-      return;
-    }
-    handleRegistrarPago(selectedDeudaId, montoPago);
-    setMontoPago("");
+  // Cerrar el modal
+  const handleCloseModal = () => {
     setModalVisible(false);
+    setSelectedDeuda(null);
   };
 
-  const renderItem = useCallback(({ item }) => {
-    const renderRightActions = () => (
-      <View style={styles.rightActions}>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteDeuda(item.id)}>
-          <Text style={styles.deleteButtonText}>Eliminar</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  
-    const renderLeftActions = () => (
-      <View style={styles.leftActions}>
-        <TouchableOpacity style={styles.editButton} onPress={() => handleEditDeuda(item)}>
-          <Text style={styles.editButtonText}>Editar</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  
+  // Renderizar cada elemento de la lista de deudas
+  const renderItem = ({ item }) => {
     return (
-      <Swipeable renderRightActions={renderRightActions} renderLeftActions={renderLeftActions}>
+      <Swipeable
+        renderRightActions={() => (
+          <View style={styles.rightActions}>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteDeuda(item.id)}
+            >
+              <Text style={styles.deleteButtonText}>Eliminar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        renderLeftActions={() => (
+          <View style={styles.leftActions}>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => handleEditDeuda(item)}
+            >
+              <Text style={styles.editButtonText}>Editar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      >
         <TouchableOpacity onPress={() => mostrarDetallesDeuda(item)}>
           <View style={styles.itemContainer}>
             <Text style={styles.itemText2}> {item.fechaInicio}</Text>
-            <View style={[styles.item, { borderLeftColor: item.atrasado === "Sí" ? "#E74C3C" : "#3498DB" }]}>
-              {item.imagenEntidad && <Image source={item.imagenEntidad} style={styles.entityImage} resizeMode="contain" />}
+            <View
+              style={[
+                styles.item,
+                {
+                  borderLeftColor:
+                    item.atrasado === "Sí" ? "#E74C3C" : "#3498DB",
+                },
+              ]}
+            >
+              {item.imagen && (
+                <Image
+                  source={item.imagen}
+                  style={styles.entityImage}
+                  resizeMode="contain"
+                />
+              )}
               <View style={styles.itemContent}>
                 <Text style={styles.itemText}>
                   <Text style={styles.itemTextLabel}>Valor Cuota: </Text>
-                  <Text style={styles.itemTextValue}>${parseFloat(item.valorCuota).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                  <Text style={styles.itemTextValue}>
+                    ${parseFloat(item.valorCuota).toLocaleString("es-ES", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Text>
                 </Text>
                 <Text style={styles.itemText}>
                   <Text style={styles.itemTextLabel}>Cuota: </Text>
-                  <Text style={styles.itemTextValue}>{item.cuotasPagadas} de {item.cuotas}</Text>
+                  <Text style={styles.itemTextValue}>
+                    {item.cuotasPagadas} de {item.cuotas}
+                  </Text>
                 </Text>
-                <TouchableOpacity style={styles.pagoButton} onPress={() => handleOpenModal(item.id)}>
+                <TouchableOpacity
+                  style={styles.pagoButton}
+                  onPress={() => handleOpenModal(item)}
+                >
                   <Text style={styles.pagoButtonText}>Registrar Pago</Text>
                 </TouchableOpacity>
               </View>
@@ -71,35 +106,28 @@ const DeudaList = ({
         </TouchableOpacity>
       </Swipeable>
     );
-  }, []);
-  
+  };
+
   return (
     <View style={styles.listContainer}>
       <Text style={styles.title}>Deudas Registradas</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#4CAF50" />
       ) : (
-        <FlatList data={deudas} keyExtractor={(item) => item.id} renderItem={renderItem} />
+        <FlatList
+          data={deudas}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+        />
       )}
 
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Registrar Pago</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ingrese el monto"
-              keyboardType="numeric"
-              value={montoPago}
-              onChangeText={setMontoPago}
-            />
-            <View style={styles.modalButtons}>
-              <Button title="Cancelar" color="#E74C3C" onPress={() => setModalVisible(false)} />
-              <Button title="Registrar" color="#2ECC71" onPress={handleConfirmPago} />
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Modal para registrar pagos */}
+      <RegistrarPagoModal
+        visible={modalVisible}
+        onClose={handleCloseModal}
+        deuda={selectedDeuda}
+        onRegistrarPago={handleRegistrarPago}
+      />
     </View>
   );
 };
