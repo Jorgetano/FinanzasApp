@@ -6,8 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import HomeScreen from "./screens/HomeScreen";
 import IngresosScreen from "./screens/IngresosScreen";
 import EgresosScreen from "./screens/EgresosScreen";
-import DeudasScreen from "./screens/./Deudas/DeudasScreen";
-import IngresoEgresos from "./screens/IngresoEgresos";
+import DeudasScreen from "./screens/Deudas/DeudasScreen";
+import IngresoEgresos from "./screens/IngresoEgresos"; // Asegúrate de que la ruta sea correcta
 
 const Tab = createBottomTabNavigator();
 
@@ -25,6 +25,7 @@ export default function App() {
             if (route.name === "Ingresos") iconName = focused ? "cash" : "cash-outline";
             if (route.name === "Egresos") iconName = focused ? "card" : "card-outline";
             if (route.name === "Deudas") iconName = focused ? "file-tray" : "file-tray-outline";
+            if (route.name === "IngresoEgresos") iconName = focused ? "add-circle" : "add-circle-outline";
             return <Ionicons name={iconName} size={size} color={color} />;
           },
           tabBarActiveTintColor: "tomato",
@@ -32,10 +33,11 @@ export default function App() {
           tabBarStyle: { backgroundColor: "#0039a2" },
         })}
       >
-        {/* <Tab.Screen name="Inicio" component={HomeScreen} />
-        <Tab.Screen name="Ingresos" component={IngresosScreen} />*/
-        <Tab.Screen name="Egresos" component={IngresoEgresos} /> }
+        <Tab.Screen name="Inicio" component={HomeScreen} />
+        <Tab.Screen name="Ingresos" component={IngresosScreen} />
+        <Tab.Screen name="Egresos" component={EgresosScreen} />
         <Tab.Screen name="Deudas" component={DeudasScreen} />
+        <Tab.Screen name="IngresoEgresos" component={IngresoEgresos} />
       </Tab.Navigator>
     </NavigationContainer>
   );

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Keyboard, Alert } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons"; // Asegúrate de instalar este paquete
-import CustomKeyboard from "./CustomKeyboard"; // Importa el teclado personalizado
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 const CategoryButton = ({ iconName, label, onPress, isSelected }) => (
   <TouchableOpacity onPress={onPress} style={styles.iconButton}>
@@ -12,7 +11,25 @@ const CategoryButton = ({ iconName, label, onPress, isSelected }) => (
   </TouchableOpacity>
 );
 
-export default function HomeScreen() {
+const CustomKeyboard = ({ onKeyPress, onCancel, onAdd, onToday, onPlus, onMinus, onCheck, onClear }) => {
+  return (
+    <View style={styles.keyboardContainer}>
+      {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "⌫"].map((key) => (
+        <TouchableOpacity key={key} style={styles.keyButton} onPress={() => onKeyPress(key)}>
+          <Text style={styles.keyText}>{key}</Text>
+        </TouchableOpacity>
+      ))}
+      <TouchableOpacity style={styles.actionButton} onPress={onCancel}>
+        <Text style={styles.actionButtonText}>Cancelar</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.actionButton} onPress={onAdd}>
+        <Text style={styles.actionButtonText}>Agregar</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+export default function IngresoEgresos() {
   const [selectedIcon, setSelectedIcon] = useState(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -146,7 +163,6 @@ export default function HomeScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#121212", padding: 20 },
   title: { color: "#FFFFFF", fontSize: 24, fontWeight: "bold", marginBottom: 20 },
