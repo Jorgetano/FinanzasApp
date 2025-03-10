@@ -1,27 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  addDeudaToFirestore,
-  getDeudasFromFirestore,
-  deleteDeudaFromFirestore,
-  updateDeudaInFirestore,
-} from "../../credenciales";
+import { useFocusEffect } from "@react-navigation/native"; // Importa useFocusEffect
+import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../../credenciales";
 import DeudaForm from "./DeudaForm";
 import DeudaList from "./DeudaList";
 
 const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 
-// Mapa de entidades a imágene
 const entidadImagenes = {
-  "Bancolombia": require('../../assets/Bancolombia-.png'),
-  "Agaval": require('../../assets/Agaval.webp'),
-  "Banco de Bogota": require('../../assets/Banco De Bogota.png'),
+  Bancolombia: require("../../assets/Bancolombia-.png"),
+  Agaval: require("../../assets/Agaval.webp"),
+  "Banco de Bogota": require("../../assets/Banco De Bogota.png"),
 };
 
 const entidadesFinancieras = ["Bancolombia", "Agaval", "Banco de Bogota", "Davivienda", "Banco de Occidente", "Banco Popular", "Banco Agrario de Colombia", "BBVA Colombia", "Banco AV Villas", "Banco Caja Social", "Banco GNB Sudameris", "Scotiabank Colpatria", "Banco Pichincha", "Bancoomeva", "Banco W", "Banco Finandina", "Banco Falabella", "Bancamía", "Banco Credifinanciera", "Banco Coopcentral"];
 
-export default function DeudasScreen() {
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 15, backgroundColor: "#F5F5F5" },
+  floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
+  floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },
+});
+
+export default function DeudasScreen({ navigation }) {
   const [showForm, setShowForm] = useState(false);
   const [entidad, setEntidad] = useState("");
   const [deudaTotal, setDeudaTotal] = useState("");
@@ -36,6 +37,15 @@ export default function DeudasScreen() {
   const [editingDeudaId, setEditingDeudaId] = useState(null);
   const [sugerencias, setSugerencias] = useState([]);
 
+  // Oculta el TabBar cuando el formulario está visible
+  useFocusEffect(
+    useCallback(() => {
+      navigation.setOptions({
+        tabBarStyle: { display: showForm ? "none" : "flex", backgroundColor: "#0039a2" }, // Oculta el TabBar si showForm es true y restaura el color
+      });
+    }, [showForm])
+  );
+
   useEffect(() => {
     fetchDeudas();
   }, []);
@@ -46,7 +56,7 @@ export default function DeudasScreen() {
       const data = await getDeudasFromFirestore();
       const deudasConImagenes = data.map((deuda) => ({
         ...deuda,
-        imagen: entidadImagenes[deuda.entidad] || null, // Mapea la imagen
+        imagen: entidadImagenes[deuda.entidad] || null,
       }));
       setDeudas(deudasConImagenes);
     } catch (error) {
@@ -66,9 +76,9 @@ export default function DeudasScreen() {
         Alert.alert("Éxito", "La deuda se ha guardado correctamente.");
       }
 
-      await fetchDeudas(); // Refrescar la lista de deudas
-      handleCloseForm(); // Restablecer el formulario y cerrar
-      setShowForm(false); // Asegurar que vuelve a la lista de deudas
+      await fetchDeudas();
+      handleCloseForm();
+      setShowForm(false);
     } catch (error) {
       Alert.alert("Error", "No se pudo guardar la deuda. Inténtelo de nuevo.");
     }
@@ -77,7 +87,7 @@ export default function DeudasScreen() {
   const handleDeleteDeuda = async (id) => {
     try {
       await deleteDeudaFromFirestore(id);
-      fetchDeudas(); // Recargar la lista de deudas después de eliminar
+      fetchDeudas();
     } catch (error) {
       Alert.alert("Error", "No se pudo eliminar la deuda.");
     }
@@ -116,8 +126,7 @@ export default function DeudasScreen() {
         entidad.toLowerCase().includes(texto.toLowerCase())
       );
       setSugerencias(sugerenciasFiltradas);
-  
-      // Actualizar la imagen de la entidad si existe
+
       const imagen = entidadImagenes[texto];
       if (imagen) {
         setImagenEntidad(imagen);
@@ -163,7 +172,7 @@ export default function DeudasScreen() {
       await updateDeudaInFirestore(id, { pagosRealizados: pagosActualizados });
 
       Alert.alert("Éxito", "El pago se ha registrado correctamente.");
-      fetchDeudas(); // Actualizar la lista de deudas
+      fetchDeudas();
     } catch (error) {
       Alert.alert("Error", "No se pudo registrar el pago.");
     }
@@ -220,13 +229,3 @@ export default function DeudasScreen() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#F5F5F5" },
-  floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
-  floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },
-  container: { flex: 1, padding: 15, backgroundColor: "#F5F5F5" },
-  floatingButton: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#3498DB", padding: 15, borderRadius: 30, elevation: 5 },
-  floatingButtonText: { color: "#FFFFFF", fontSize: 20, fontWeight: "bold" },
-});
-
