@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useFocusEffect } from "@react-navigation/native"; // Importa useFocusEffect
+import { useFocusEffect } from "@react-navigation/native";
 import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../../credenciales";
 import DeudaForm from "./DeudaForm";
 import DeudaList from "./DeudaList";
@@ -41,7 +41,7 @@ export default function DeudasScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       navigation.setOptions({
-        tabBarStyle: { display: showForm ? "none" : "flex", backgroundColor: "#0039a2" }, // Oculta el TabBar si showForm es true y restaura el color
+        tabBarStyle: { display: showForm ? "none" : "flex", backgroundColor: "#0039a2" },
       });
     }, [showForm])
   );
@@ -56,6 +56,7 @@ export default function DeudasScreen({ navigation }) {
       const data = await getDeudasFromFirestore();
       const deudasConImagenes = data.map((deuda) => ({
         ...deuda,
+        valorCuota: deuda.valorCuota || 0, // Asegurarse de que valorCuota esté definido
         imagen: entidadImagenes[deuda.entidad] || null,
       }));
       setDeudas(deudasConImagenes);
@@ -68,14 +69,25 @@ export default function DeudasScreen({ navigation }) {
 
   const handleSubmit = async (deuda) => {
     try {
+      // Calcular la deuda pendiente inicial
+      const deudaPendiente = parseFloat(deuda.deudaTotal);
+  
+      // Agregar el campo deudaPendiente a la deuda
+      const deudaActualizada = {
+        ...deuda,
+        deudaPendiente: deudaPendiente,
+        cuotasPagadas: 0, // Inicializar cuotas pagadas en 0
+        valorCuota: deuda.valorCuota || 0, // Asegurarse de que valorCuota esté definido
+      };
+  
       if (editingDeudaId) {
-        await updateDeudaInFirestore(editingDeudaId, deuda);
+        await updateDeudaInFirestore(editingDeudaId, deudaActualizada);
         Alert.alert("Éxito", "La deuda se ha actualizado correctamente.");
       } else {
-        await addDeudaToFirestore(deuda);
+        await addDeudaToFirestore(deudaActualizada);
         Alert.alert("Éxito", "La deuda se ha guardado correctamente.");
       }
-
+  
       await fetchDeudas();
       handleCloseForm();
       setShowForm(false);
@@ -144,98 +156,99 @@ export default function DeudasScreen({ navigation }) {
   };
 
   const mostrarDetallesDeuda = (deuda) => {
-    const deudaPendiente = calcularDeudaPendiente(deuda.deudaTotal, deuda.pagosRealizados);
+    const deudaPendiente = deuda.deudaPendiente;
     const cuotasPendientes = deuda.cuotas - deuda.cuotasPagadas;
-
+  
     Alert.alert(
       "Detalles de la Deuda",
-      `                           📌 ${deuda.entidad}\n\n💰 Deuda Total: $${deuda.deudaTotal}\n📆 Fecha Inicio: ${deuda.fechaInicio}\n💳 Cuotas Pendientes: ${cuotasPendientes}\n💲 Valor Cuota: $${deuda.valorCuota}\n🔹 Deuda Pendiente: $${deudaPendiente}`,
+      `📌 ${deuda.entidad}\n\n💰 Deuda Total: $${deuda.deudaTotal}\n📆 Fecha Inicio: ${deuda.fechaInicio}\n💳 Cuotas Pendientes: ${cuotasPendientes}\n💲 Valor Cuota: $${deuda.valorCuota}\n🔹 Deuda Pendiente: $${deudaPendiente}`,
       [{ text: "Cerrar", style: "cancel" }]
     );
   };
 
   const handleRegistrarPago = async (id, monto) => {
-    try {
-      // Validar el monto
-      const nuevoPago = parseFloat(monto);
-      if (isNaN(nuevoPago)) {
-        Alert.alert("Error", "El monto ingresado no es válido.");
-        return;
-      }
-  
-      // Buscar la deuda correspondiente
-      const deuda = deudas.find((d) => d.id === id);
-      if (!deuda) {
-        Alert.alert("Error", "No se encontró la deuda.");
-        return;
-      }
-  
-      // Calcular los pagos actualizados y las cuotas pagadas
-      const pagosActualizados = parseFloat(deuda.pagosRealizados) + nuevoPago;
-      const cuotasPagadas = deuda.cuotasPagadas + 1; // Incrementar cuotas pagadas
-  
-      // Actualizar la deuda en Firestore
-      await updateDeudaInFirestore(id, {
-        pagosRealizados: pagosActualizados,
-        cuotasPagadas,
-      });
-  
-      // Mostrar mensaje de éxito y recargar las deudas
-      Alert.alert("Éxito", "El pago se ha registrado correctamente.");
-      fetchDeudas(); // Recargar las deudas para reflejar los cambios
-    } catch (error) {
-      Alert.alert("Error", "No se pudo registrar el pago.");
+  try {
+    // Validar que el monto sea un número válido
+    const montoNumerico = parseFloat(monto);
+    if (isNaN(montoNumerico) || montoNumerico <= 0) {
+      Alert.alert("Error", "El monto ingresado no es válido.");
+      return;
     }
-  };
 
-return (
-  <GestureHandlerRootView style={{ flex: 1 }}>
-    <View style={styles.container}>
-      {showForm ? (
-        <DeudaForm
-          entidad={entidad}
-          setEntidad={setEntidad}
-          deudaTotal={deudaTotal}
-          setDeudaTotal={setDeudaTotal}
-          valorCuota={valorCuota}
-          setValorCuota={setValorCuota}
-          fechaInicio={fechaInicio}
-          setFechaInicio={setFechaInicio}
-          atrasado={atrasado}
-          setAtrasado={setAtrasado}
-          cuotas={cuotas}
-          setCuotas={setCuotas}
-          pagosRealizados={pagosRealizados}
-          setPagosRealizados={setPagosRealizados}
-          imagenEntidad={imagenEntidad}
-          sugerencias={sugerencias}
-          setSugerencias={setSugerencias}
-          handleEntidadChange={handleEntidadChange}
-          handleSubmit={handleSubmit}
-          handleCloseForm={handleCloseForm}
-          editingDeudaId={editingDeudaId}
-          entidadImagenes={entidadImagenes}
-        />
-      ) : (
-        <DeudaList
-          deudas={deudas}
-          loading={loading}
-          handleDeleteDeuda={handleDeleteDeuda}
-          handleEditDeuda={handleEditDeuda}
-          mostrarDetallesDeuda={mostrarDetallesDeuda}
-          handleRegistrarPago={handleRegistrarPago}
-        />
-      )}
+    // Buscar la deuda correspondiente
+    const deuda = deudas.find((d) => d.id === id);
+    if (!deuda) {
+      Alert.alert("Error", "No se encontró la deuda.");
+      return;
+    }
 
-      {!showForm && (
-        <TouchableOpacity
-          style={styles.floatingButton}
-          onPress={() => setShowForm(true)}
-        >
-          <Text style={styles.floatingButtonText}>Agregar Deuda</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  </GestureHandlerRootView>
-);
+    // Calcular los nuevos valores
+    const pagosActualizados = parseFloat(deuda.pagosRealizados) + montoNumerico;
+    const cuotasPagadas = deuda.cuotasPagadas + 1;
+    const deudaPendiente = parseFloat(deuda.deudaPendiente) - montoNumerico;
+
+    // Actualizar la deuda en Firestore
+    await updateDeudaInFirestore(id, {
+      pagosRealizados: pagosActualizados,
+      cuotasPagadas,
+      deudaPendiente,
+    });
+
+    Alert.alert("Éxito", "El pago se ha registrado correctamente.");
+    fetchDeudas(); // Actualizar la lista de deudas
+  } catch (error) {
+    Alert.alert("Error", "No se pudo registrar el pago.");
+  }
+};
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        {showForm ? (
+          <DeudaForm
+            entidad={entidad}
+            setEntidad={setEntidad}
+            deudaTotal={deudaTotal}
+            setDeudaTotal={setDeudaTotal}
+            valorCuota={valorCuota}
+            setValorCuota={setValorCuota}
+            fechaInicio={fechaInicio}
+            setFechaInicio={setFechaInicio}
+            atrasado={atrasado}
+            setAtrasado={setAtrasado}
+            cuotas={cuotas}
+            setCuotas={setCuotas}
+            pagosRealizados={pagosRealizados}
+            setPagosRealizados={setPagosRealizados}
+            imagenEntidad={imagenEntidad}
+            sugerencias={sugerencias}
+            setSugerencias={setSugerencias}
+            handleEntidadChange={handleEntidadChange}
+            handleSubmit={handleSubmit}
+            handleCloseForm={handleCloseForm}
+            editingDeudaId={editingDeudaId}
+            entidadImagenes={entidadImagenes}
+          />
+        ) : (
+          <DeudaList
+            deudas={deudas}
+            loading={loading}
+            handleDeleteDeuda={handleDeleteDeuda}
+            handleEditDeuda={handleEditDeuda}
+            mostrarDetallesDeuda={mostrarDetallesDeuda}
+            handleRegistrarPago={handleRegistrarPago}
+          />
+        )}
+
+        {!showForm && (
+          <TouchableOpacity
+            style={styles.floatingButton}
+            onPress={() => setShowForm(true)}
+          >
+            <Text style={styles.floatingButtonText}>Agregar Deuda</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </GestureHandlerRootView>
+  );
 }

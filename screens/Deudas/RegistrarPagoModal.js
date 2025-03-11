@@ -7,44 +7,35 @@ const RegistrarPagoModal = ({ visible, onClose, deuda, onRegistrarPago }) => {
 
   const handleRegistrarPago = () => {
     let monto = 0;
-  
+
     if (opcionPago === "cuota") {
       // Si se paga la cuota, el monto es el valor de la cuota
       monto = parseFloat(deuda.valorCuota);
+
+      // Validar que el valor de la cuota sea un número válido
+      if (isNaN(monto) || monto <= 0) {
+        Alert.alert("Error", "El valor de la cuota no es válido.");
+        return;
+      }
     } else {
       // Si se paga otro valor, validar que el monto no esté vacío y sea un número válido
       if (!montoPago || montoPago.trim() === "") {
         Alert.alert("Error", "Ingrese un monto válido.");
         return;
       }
-  
+
+      // Convertir el monto a número, reemplazando comas por puntos si es necesario
       monto = parseFloat(montoPago.replace(",", "."));
-  
+
       if (isNaN(monto) || monto <= 0) {
         Alert.alert("Error", "Ingrese un monto válido.");
         return;
       }
     }
-  
-    // Lógica para actualizar cuotasPagadas y pagosRealizados
-    let cuotasPagadas = deuda.cuotasPagadas || 0;
-    let pagosRealizados = parseFloat(deuda.pagosRealizados || 0);
-  
-    if (opcionPago === "cuota") {
-      // Si se paga la cuota, se incrementa el número de cuotas pagadas
-      cuotasPagadas += 1;
-      pagosRealizados += monto;
-    } else {
-      // Si se paga otro valor, se aplica directamente a los pagos realizados
-      pagosRealizados += monto;
-    }
-  
+
     // Llamar a la función onRegistrarPago para actualizar la deuda en Firestore
-    onRegistrarPago(deuda.id, {
-      cuotasPagadas,
-      pagosRealizados,
-    });
-  
+    onRegistrarPago(deuda.id, monto);
+
     // Cerrar el modal y limpiar el campo de monto
     setMontoPago("");
     onClose();
@@ -73,11 +64,14 @@ const RegistrarPagoModal = ({ visible, onClose, deuda, onRegistrarPago }) => {
 
           {opcionPago === "otro" && (
             <TextInput
-              style={styles.input}
-              placeholder="Ingrese el monto"
+              placeholder="Valor de la cuota"
               keyboardType="numeric"
-              value={montoPago}
-              onChangeText={(text) => setMontoPago(text)} // Actualiza el estado
+              value={valorCuota}
+              onChangeText={(text) => {
+                // Permitir solo números y un punto decimal
+                const cleanedText = text.replace(/[^0-9.]/g, "");
+                setValorCuota(cleanedText);
+              }}
             />
           )}
 
