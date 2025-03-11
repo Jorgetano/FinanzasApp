@@ -1,15 +1,7 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Image,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, ActivityIndicator } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
-import RegistrarPagoModal from "../Deudas/RegistrarPago"; // Importa el nuevo componente
+import RegistrarPagoModal from "../Deudas/RegistrarPagoModal"; // Importa el nuevo componente
 
 const DeudaList = ({
   deudas,
@@ -22,19 +14,16 @@ const DeudaList = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDeuda, setSelectedDeuda] = useState(null);
 
-  // Abrir el modal para registrar un pago
   const handleOpenModal = (deuda) => {
     setSelectedDeuda(deuda);
     setModalVisible(true);
   };
 
-  // Cerrar el modal
   const handleCloseModal = () => {
     setModalVisible(false);
     setSelectedDeuda(null);
   };
 
-  // Renderizar cada elemento de la lista de deudas
   const renderItem = ({ item }) => {
     return (
       <Swipeable

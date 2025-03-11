@@ -161,16 +161,21 @@ export default function DeudasScreen({ navigation }) {
         Alert.alert("Error", "No se encontró la deuda.");
         return;
       }
-
+  
       const nuevoPago = parseFloat(monto);
       if (isNaN(nuevoPago)) {
         Alert.alert("Error", "El monto ingresado no es válido.");
         return;
       }
-
+  
       const pagosActualizados = parseFloat(deuda.pagosRealizados) + nuevoPago;
-      await updateDeudaInFirestore(id, { pagosRealizados: pagosActualizados });
-
+      const cuotasPagadas = deuda.cuotasPagadas + 1; // Incrementar cuotas pagadas
+  
+      await updateDeudaInFirestore(id, { 
+        pagosRealizados: pagosActualizados,
+        cuotasPagadas,
+      });
+  
       Alert.alert("Éxito", "El pago se ha registrado correctamente.");
       fetchDeudas();
     } catch (error) {
