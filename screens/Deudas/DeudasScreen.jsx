@@ -156,81 +156,86 @@ export default function DeudasScreen({ navigation }) {
 
   const handleRegistrarPago = async (id, monto) => {
     try {
-      const deuda = deudas.find((d) => d.id === id);
-      if (!deuda) {
-        Alert.alert("Error", "No se encontró la deuda.");
-        return;
-      }
-  
+      // Validar el monto
       const nuevoPago = parseFloat(monto);
       if (isNaN(nuevoPago)) {
         Alert.alert("Error", "El monto ingresado no es válido.");
         return;
       }
   
+      // Buscar la deuda correspondiente
+      const deuda = deudas.find((d) => d.id === id);
+      if (!deuda) {
+        Alert.alert("Error", "No se encontró la deuda.");
+        return;
+      }
+  
+      // Calcular los pagos actualizados y las cuotas pagadas
       const pagosActualizados = parseFloat(deuda.pagosRealizados) + nuevoPago;
       const cuotasPagadas = deuda.cuotasPagadas + 1; // Incrementar cuotas pagadas
   
-      await updateDeudaInFirestore(id, { 
+      // Actualizar la deuda en Firestore
+      await updateDeudaInFirestore(id, {
         pagosRealizados: pagosActualizados,
         cuotasPagadas,
       });
   
+      // Mostrar mensaje de éxito y recargar las deudas
       Alert.alert("Éxito", "El pago se ha registrado correctamente.");
-      fetchDeudas();
+      fetchDeudas(); // Recargar las deudas para reflejar los cambios
     } catch (error) {
       Alert.alert("Error", "No se pudo registrar el pago.");
     }
   };
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        {showForm ? (
-          <DeudaForm
-            entidad={entidad}
-            setEntidad={setEntidad}
-            deudaTotal={deudaTotal}
-            setDeudaTotal={setDeudaTotal}
-            valorCuota={valorCuota}
-            setValorCuota={setValorCuota}
-            fechaInicio={fechaInicio}
-            setFechaInicio={setFechaInicio}
-            atrasado={atrasado}
-            setAtrasado={setAtrasado}
-            cuotas={cuotas}
-            setCuotas={setCuotas}
-            pagosRealizados={pagosRealizados}
-            setPagosRealizados={setPagosRealizados}
-            imagenEntidad={imagenEntidad}
-            sugerencias={sugerencias}
-            setSugerencias={setSugerencias}
-            handleEntidadChange={handleEntidadChange}
-            handleSubmit={handleSubmit}
-            handleCloseForm={handleCloseForm}
-            editingDeudaId={editingDeudaId}
-            entidadImagenes={entidadImagenes}
-          />
-        ) : (
-          <DeudaList
-            deudas={deudas}
-            loading={loading}
-            handleDeleteDeuda={handleDeleteDeuda}
-            handleEditDeuda={handleEditDeuda}
-            mostrarDetallesDeuda={mostrarDetallesDeuda}
-            handleRegistrarPago={handleRegistrarPago}
-          />
-        )}
+return (
+  <GestureHandlerRootView style={{ flex: 1 }}>
+    <View style={styles.container}>
+      {showForm ? (
+        <DeudaForm
+          entidad={entidad}
+          setEntidad={setEntidad}
+          deudaTotal={deudaTotal}
+          setDeudaTotal={setDeudaTotal}
+          valorCuota={valorCuota}
+          setValorCuota={setValorCuota}
+          fechaInicio={fechaInicio}
+          setFechaInicio={setFechaInicio}
+          atrasado={atrasado}
+          setAtrasado={setAtrasado}
+          cuotas={cuotas}
+          setCuotas={setCuotas}
+          pagosRealizados={pagosRealizados}
+          setPagosRealizados={setPagosRealizados}
+          imagenEntidad={imagenEntidad}
+          sugerencias={sugerencias}
+          setSugerencias={setSugerencias}
+          handleEntidadChange={handleEntidadChange}
+          handleSubmit={handleSubmit}
+          handleCloseForm={handleCloseForm}
+          editingDeudaId={editingDeudaId}
+          entidadImagenes={entidadImagenes}
+        />
+      ) : (
+        <DeudaList
+          deudas={deudas}
+          loading={loading}
+          handleDeleteDeuda={handleDeleteDeuda}
+          handleEditDeuda={handleEditDeuda}
+          mostrarDetallesDeuda={mostrarDetallesDeuda}
+          handleRegistrarPago={handleRegistrarPago}
+        />
+      )}
 
-        {!showForm && (
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={() => setShowForm(true)}
-          >
-            <Text style={styles.floatingButtonText}>Agregar Deuda</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </GestureHandlerRootView>
-  );
+      {!showForm && (
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => setShowForm(true)}
+        >
+          <Text style={styles.floatingButtonText}>Agregar Deuda</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  </GestureHandlerRootView>
+);
 }

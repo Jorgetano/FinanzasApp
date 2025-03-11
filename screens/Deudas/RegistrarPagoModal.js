@@ -6,36 +6,45 @@ const RegistrarPagoModal = ({ visible, onClose, deuda, onRegistrarPago }) => {
   const [opcionPago, setOpcionPago] = useState("cuota"); // "cuota" o "otro"
 
   const handleRegistrarPago = () => {
-    const nuevoPago = parseFloat(montoPago);
-    if (isNaN(nuevoPago) || nuevoPago <= 0) {
-      Alert.alert("Error", "Ingrese un monto válido.");
-      return;
+    let monto = 0;
+  
+    if (opcionPago === "cuota") {
+      // Si se paga la cuota, el monto es el valor de la cuota
+      monto = parseFloat(deuda.valorCuota);
+    } else {
+      // Si se paga otro valor, validar que el monto no esté vacío y sea un número válido
+      if (!montoPago || montoPago.trim() === "") {
+        Alert.alert("Error", "Ingrese un monto válido.");
+        return;
+      }
+  
+      monto = parseFloat(montoPago.replace(",", "."));
+  
+      if (isNaN(monto) || monto <= 0) {
+        Alert.alert("Error", "Ingrese un monto válido.");
+        return;
+      }
     }
-
+  
+    // Lógica para actualizar cuotasPagadas y pagosRealizados
     let cuotasPagadas = deuda.cuotasPagadas || 0;
-    let deudaTotal = parseFloat(deuda.deudaTotal);
-    let valorCuota = parseFloat(deuda.valorCuota);
     let pagosRealizados = parseFloat(deuda.pagosRealizados || 0);
-    let cuotasPendientes = deuda.cuotas - cuotasPagadas;
-
+  
     if (opcionPago === "cuota") {
       // Si se paga la cuota, se incrementa el número de cuotas pagadas
       cuotasPagadas += 1;
-      pagosRealizados += valorCuota;
-      deudaTotal -= valorCuota;
+      pagosRealizados += monto;
     } else {
-      // Si se paga otro valor, se aplica directamente a la deuda total
-      pagosRealizados += nuevoPago;
-      deudaTotal -= nuevoPago;
+      // Si se paga otro valor, se aplica directamente a los pagos realizados
+      pagosRealizados += monto;
     }
-
+  
     // Llamar a la función onRegistrarPago para actualizar la deuda en Firestore
     onRegistrarPago(deuda.id, {
       cuotasPagadas,
-      deudaTotal,
       pagosRealizados,
     });
-
+  
     // Cerrar el modal y limpiar el campo de monto
     setMontoPago("");
     onClose();
@@ -68,7 +77,7 @@ const RegistrarPagoModal = ({ visible, onClose, deuda, onRegistrarPago }) => {
               placeholder="Ingrese el monto"
               keyboardType="numeric"
               value={montoPago}
-              onChangeText={setMontoPago}
+              onChangeText={(text) => setMontoPago(text)} // Actualiza el estado
             />
           )}
 
