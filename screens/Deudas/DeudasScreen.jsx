@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
-import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore } from "../../credenciales";
+import { addDeudaToFirestore, getDeudasFromFirestore, deleteDeudaFromFirestore, updateDeudaInFirestore,agregarDeudaPagada } from "../../credenciales";
 import DeudaForm from "./DeudaForm";
 import DeudaList from "./DeudaList";
 
@@ -166,40 +166,40 @@ export default function DeudasScreen({ navigation }) {
     );
   };
 
-  const handleRegistrarPago = async (id, monto) => {
-  try {
-    // Validar que el monto sea un número válido
-    const montoNumerico = parseFloat(monto);
-    if (isNaN(montoNumerico) || montoNumerico <= 0) {
-      Alert.alert("Error", "El monto ingresado no es válido.");
-      return;
+  const handleRegistrarPago = async (id, monto, esDeudaPagada) => {
+    try {
+      // Buscar la deuda correspondiente
+      const deuda = deudas.find((d) => d.id === id);
+      if (!deuda) {
+        Alert.alert("Error", "No se encontró la deuda.");
+        return;
+      }
+  
+      // Calcular los nuevos valores
+      const pagosActualizados = parseFloat(deuda.pagosRealizados) + monto;
+      const cuotasPagadas = deuda.cuotasPagadas + 1;
+      const deudaPendiente = parseFloat(deuda.deudaPendiente) - monto;
+  
+      // Si la deuda está completamente pagada, moverla a la lista de "Deudas Pagadas"
+      if (esDeudaPagada) {
+        // Aquí puedes guardar la deuda pagada en otra colección de Firestore o en un estado local
+        await agregarDeudaPagada(deuda); // Función para guardar la deuda pagada
+        await deleteDeudaFromFirestore(id); // Eliminar la deuda de la lista activa
+      } else {
+        // Actualizar la deuda en Firestore
+        await updateDeudaInFirestore(id, {
+          pagosRealizados: pagosActualizados,
+          cuotasPagadas,
+          deudaPendiente,
+        });
+      }
+  
+      // Actualizar la lista de deudas
+      fetchDeudas();
+    } catch (error) {
+      Alert.alert("Error", "No se pudo registrar el pago.");
     }
-
-    // Buscar la deuda correspondiente
-    const deuda = deudas.find((d) => d.id === id);
-    if (!deuda) {
-      Alert.alert("Error", "No se encontró la deuda.");
-      return;
-    }
-
-    // Calcular los nuevos valores
-    const pagosActualizados = parseFloat(deuda.pagosRealizados) + montoNumerico;
-    const cuotasPagadas = deuda.cuotasPagadas + 1;
-    const deudaPendiente = parseFloat(deuda.deudaPendiente) - montoNumerico;
-
-    // Actualizar la deuda en Firestore
-    await updateDeudaInFirestore(id, {
-      pagosRealizados: pagosActualizados,
-      cuotasPagadas,
-      deudaPendiente,
-    });
-
-    Alert.alert("Éxito", "El pago se ha registrado correctamente.");
-    fetchDeudas(); // Actualizar la lista de deudas
-  } catch (error) {
-    Alert.alert("Error", "No se pudo registrar el pago.");
-  }
-};
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

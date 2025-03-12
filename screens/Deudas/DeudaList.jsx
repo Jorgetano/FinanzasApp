@@ -1,7 +1,19 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
-import RegistrarPagoModal from "../Deudas/RegistrarPagoModal"; // Importa el nuevo componente
+import RegistrarPagoModal from "../Deudas/RegistrarPagoModal";
+import {
+  deleteDeudaFromFirestore,
+  agregarDeudaPagada,
+} from "../../credenciales"; // Importa las funciones de Firestore
 
 const DeudaList = ({
   deudas,
@@ -14,6 +26,13 @@ const DeudaList = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDeuda, setSelectedDeuda] = useState(null);
 
+  // Ordenar las deudas: las atrasadas primero
+  const sortedDeudas = [...deudas].sort((a, b) => {
+    if (a.atrasado === "Sí" && b.atrasado !== "Sí") return -1; // Atrasadas primero
+    if (a.atrasado !== "Sí" && b.atrasado === "Sí") return 1; // No atrasadas después
+    return 0; // Mantener el orden relativo
+  });
+
   const handleOpenModal = (deuda) => {
     setSelectedDeuda(deuda);
     setModalVisible(true);
@@ -24,7 +43,26 @@ const DeudaList = ({
     setSelectedDeuda(null);
   };
 
+  const handleRegistrarPagoCompleto = async (id, monto, isPagada) => {
+    if (isPagada) {
+      try {
+        const deudaPagada = deudas.find((deuda) => deuda.id === id);
+        await agregarDeudaPagada(deudaPagada); // Agregar a "DeudasPagadas"
+        await deleteDeudaFromFirestore(id); // Eliminar de "Deudas"
+        handleRegistrarPago(id, monto, isPagada); // Actualizar el estado local
+        Alert.alert("Éxito", "Deuda pagada y movida a Deudas Pagadas.");
+      } catch (error) {
+        console.error("Error al mover la deuda a pagadas:", error);
+        Alert.alert("Error", "No se pudo mover la deuda a pagadas.");
+      }
+    } else {
+      handleRegistrarPago(id, monto, isPagada); // Solo actualizar el estado local
+    }
+  };
+
   const renderItem = ({ item }) => {
+    const borderColor = item.atrasado === "Sí" ? "#E74C3C" : "#3498DB";
+
     return (
       <Swipeable
         renderRightActions={() => (
@@ -55,8 +93,7 @@ const DeudaList = ({
               style={[
                 styles.item,
                 {
-                  borderLeftColor:
-                    item.atrasado === "Sí" ? "#E74C3C" : "#3498DB",
+                  borderLeftColor: borderColor, // Color condicional
                 },
               ]}
             >
@@ -104,7 +141,7 @@ const DeudaList = ({
         <ActivityIndicator size="large" color="#4CAF50" />
       ) : (
         <FlatList
-          data={deudas}
+          data={sortedDeudas} // Usar el arreglo ordenado
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
         />
@@ -115,11 +152,12 @@ const DeudaList = ({
         visible={modalVisible}
         onClose={handleCloseModal}
         deuda={selectedDeuda}
-        onRegistrarPago={handleRegistrarPago}
+        onRegistrarPago={handleRegistrarPagoCompleto}
       />
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   listContainer: { flex: 1, marginTop: -7 },

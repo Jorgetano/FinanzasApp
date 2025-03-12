@@ -63,4 +63,14 @@ export const updateDeudaInFirestore = async (id, nuevaDeuda) => {
   }
 };
 
+export const agregarDeudaPagada = async (deuda) => {
+  try {
+    // Guardar la deuda pagada en una colección de Firestore llamada "DeudasPagadas"
+    await addDoc(collection(db, "DeudasPagadas"), deuda);
+    console.log("Deuda pagada guardada correctamente.");
+  } catch (error) {
+    console.error("Error al guardar la deuda pagada:", error);
+    throw error;
+  }
+};
 export { db };

@@ -7,7 +7,7 @@ import HomeScreen from "./screens/HomeScreen";
 import IngresosScreen from "./screens/IngresosScreen";
 import EgresosScreen from "./screens/EgresosScreen";
 import DeudasScreen from "./screens/Deudas/DeudasScreen";
-import IngresoEgresos from "./screens/IngresoEgresos"; // Asegúrate de que la ruta sea correcta
+import DeudasPagadasScreen from "./screens/Deudas/DeudasPagadasScreen"; // Asegúrate de que la ruta sea correcta
 
 const Tab = createBottomTabNavigator();
 
@@ -25,7 +25,7 @@ export default function App() {
             if (route.name === "Ingresos") iconName = focused ? "cash" : "cash-outline";
             if (route.name === "Egresos") iconName = focused ? "card" : "card-outline";
             if (route.name === "Deudas") iconName = focused ? "file-tray" : "file-tray-outline";
-            if (route.name === "IngresoEgresos") iconName = focused ? "add-circle" : "add-circle-outline";
+            if (route.name === "Deudas Pagadas") iconName = focused ? "add-circle" : "add-circle-outline"; // Cambiado a "Deudas Pagadas"
             return <Ionicons name={iconName} size={size} color={color} />;
           },
           tabBarActiveTintColor: "tomato",
@@ -37,7 +37,7 @@ export default function App() {
         <Tab.Screen name="Ingresos" component={IngresosScreen} />
         <Tab.Screen name="Egresos" component={EgresosScreen} />
         <Tab.Screen name="Deudas" component={DeudasScreen} />
-        <Tab.Screen name="IngresoEgresos" component={IngresoEgresos} />
+        <Tab.Screen name="Deudas Pagadas" component={DeudasPagadasScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );

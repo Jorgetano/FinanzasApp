@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from "react-native";
+import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, FlatList } from "react-native";
 
 const ATRASADO_OPCIONES = { NO: "No", SI: "Sí" };
 
@@ -8,12 +8,38 @@ const DeudaForm = ({ entidad, setEntidad, deudaTotal, setDeudaTotal, valorCuota,
   const [cuotasPagadas, setCuotasPagadas] = useState(0);
 
   useEffect(() => {
-    if (fechaInicio) {
+    if (fechaInicio && fechaInicio.length === 10) {
+      const fechaRegex = /^\d{2}-\d{2}-\d{4}$/;
+      if (!fechaRegex.test(fechaInicio)) {
+        console.error("Formato de fecha no válido:", fechaInicio);
+        return;
+      }
+
+      // Dividir la fecha en día, mes y año
       const [dia, mes, anio] = fechaInicio.split("-");
-      const fechaInicioFormateada = `${anio}-${mes}-${dia}`;
+
+      // Validar que dia, mes y anio estén definidos
+      if (!dia || !mes || !anio) {
+        console.error("Fecha no válida:", fechaInicio);
+        return;
+      }
+
+      // Asegurarse de que el día y el mes tengan dos dígitos
+      const diaFormateado = dia.padStart(2, "0");
+      const mesFormateado = mes.padStart(2, "0");
+
+      // Crear la fecha en formato YYYY-MM-DD
+      const fechaInicioFormateada = `${anio}-${mesFormateado}-${diaFormateado}`;
       const fechaInicioDate = new Date(fechaInicioFormateada);
       const fechaActual = new Date();
 
+      // Verificar si la fecha de inicio es válida
+      if (isNaN(fechaInicioDate.getTime())) {
+        console.error("Fecha de inicio no válida:", fechaInicio);
+        return;
+      }
+
+      // Calcular la diferencia en meses
       if (fechaInicioDate > fechaActual) {
         setCuotasPagadas(0); // Si la fecha de inicio es en el futuro, no hay cuotas pagadas
       } else {
@@ -21,12 +47,13 @@ const DeudaForm = ({ entidad, setEntidad, deudaTotal, setDeudaTotal, valorCuota,
           (fechaActual.getFullYear() - fechaInicioDate.getFullYear()) * 12 +
           (fechaActual.getMonth() - fechaInicioDate.getMonth());
 
+        // Ajustar si el día actual es menor al día de inicio
         if (fechaActual.getDate() < fechaInicioDate.getDate()) {
-          diffMeses--; // Ajusta si el día actual es menor al día de inicio
+          diffMeses--;
         }
 
         const cuotasPagadasCalculadas = Math.max(0, diffMeses);
-        setCuotasPagadas(Math.min(cuotasPagadasCalculadas, cuotas)); // Asegúrate de no exceder el número total de cuotas
+        setCuotasPagadas(Math.min(cuotasPagadasCalculadas, cuotas)); // No exceder el número total de cuotas
       }
     }
   }, [fechaInicio, cuotas]);
@@ -42,7 +69,7 @@ const DeudaForm = ({ entidad, setEntidad, deudaTotal, setDeudaTotal, valorCuota,
       cuotasPagadas,
       imagenEntidad: entidadImagenes[entidad] || null, // Guarda la referencia de la imagen
     };
-  
+
     console.log("Deuda a guardar:", deuda); // Depuración
     handleSubmit(deuda);
   };

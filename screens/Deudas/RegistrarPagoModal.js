@@ -1,41 +1,53 @@
 import React, { useState } from "react";
-import { View, Text, Modal, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Modal,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 
 const RegistrarPagoModal = ({ visible, onClose, deuda, onRegistrarPago }) => {
   const [montoPago, setMontoPago] = useState("");
   const [opcionPago, setOpcionPago] = useState("cuota"); // "cuota" o "otro"
 
-  const handleRegistrarPago = () => {
+  const handleRegistrarPago = async () => {
     let monto = 0;
-
+  
     if (opcionPago === "cuota") {
-      // Si se paga la cuota, el monto es el valor de la cuota
       monto = parseFloat(deuda.valorCuota);
-
-      // Validar que el valor de la cuota sea un número válido
+  
       if (isNaN(monto) || monto <= 0) {
         Alert.alert("Error", "El valor de la cuota no es válido.");
         return;
       }
     } else {
-      // Si se paga otro valor, validar que el monto no esté vacío y sea un número válido
       if (!montoPago || montoPago.trim() === "") {
         Alert.alert("Error", "Ingrese un monto válido.");
         return;
       }
-
-      // Convertir el monto a número, reemplazando comas por puntos si es necesario
+  
       monto = parseFloat(montoPago.replace(",", "."));
-
+  
       if (isNaN(monto) || monto <= 0) {
         Alert.alert("Error", "Ingrese un monto válido.");
         return;
       }
     }
-
-    // Llamar a la función onRegistrarPago para actualizar la deuda en Firestore
-    onRegistrarPago(deuda.id, monto);
-
+  
+    const nuevaDeudaPendiente = parseFloat(deuda.deudaPendiente) - monto;
+  
+    if (nuevaDeudaPendiente <= 0) {
+      // Si la deuda pendiente es 0 o menor, mover la deuda a "DeudasPagadas"
+      onRegistrarPago(deuda.id, monto, true); // Pasar `true` para indicar que la deuda está pagada
+    } else {
+      // Si la deuda pendiente no es 0, solo actualizar la deuda
+      onRegistrarPago(deuda.id, monto, false); // Pasar `false` para indicar que la deuda no está pagada
+    }
+  
     // Cerrar el modal y limpiar el campo de monto
     setMontoPago("");
     onClose();
@@ -49,13 +61,19 @@ const RegistrarPagoModal = ({ visible, onClose, deuda, onRegistrarPago }) => {
 
           <View style={styles.opcionesPago}>
             <TouchableOpacity
-              style={[styles.opcionPagoButton, opcionPago === "cuota" && styles.opcionPagoButtonSelected]}
+              style={[
+                styles.opcionPagoButton,
+                opcionPago === "cuota" && styles.opcionPagoButtonSelected,
+              ]}
               onPress={() => setOpcionPago("cuota")}
             >
               <Text style={styles.opcionPagoText}>Pagar Cuota</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.opcionPagoButton, opcionPago === "otro" && styles.opcionPagoButtonSelected]}
+              style={[
+                styles.opcionPagoButton,
+                opcionPago === "otro" && styles.opcionPagoButtonSelected,
+              ]}
               onPress={() => setOpcionPago("otro")}
             >
               <Text style={styles.opcionPagoText}>Otro Valor</Text>
@@ -64,14 +82,14 @@ const RegistrarPagoModal = ({ visible, onClose, deuda, onRegistrarPago }) => {
 
           {opcionPago === "otro" && (
             <TextInput
-              placeholder="Valor de la cuota"
+              placeholder="Ingrese el monto"
               keyboardType="numeric"
-              value={valorCuota}
+              value={montoPago}
               onChangeText={(text) => {
-                // Permitir solo números y un punto decimal
                 const cleanedText = text.replace(/[^0-9.]/g, "");
-                setValorCuota(cleanedText);
+                setMontoPago(cleanedText);
               }}
+              style={styles.input}
             />
           )}
 
